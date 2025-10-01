@@ -30,6 +30,12 @@ export default (sequelize) => {
             type: DataTypes.BOOLEAN,
             allowNull: false,
         },
-        //falta fazer fases mas ainda vou ver como vou fazer
+        fases: {
+            type: DataTypes.JSON,
+            allowNull: false,
+            validate: {
+                notEmpty: true,
+            },
+        }
     })
 }
