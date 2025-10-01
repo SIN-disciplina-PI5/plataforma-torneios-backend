@@ -34,9 +34,15 @@ export default (sequelize) => {
             validate: {
                 notEmpty: true,
             },
+        },
+        role: {
+            type: DataTypes.ENUM("ADMIN", "USER"),
+            allowNull: false,
+            validate: {
+                notEmpty: true,
+            },
         }
         //sequelize cria createdat e updatedat
-        //por enquanto vou deixar sem a role mas vou add depois
     })
     User.beforeCreate(async (user) => {
         user.password = await bcrypt.hash(user.password, 10);
