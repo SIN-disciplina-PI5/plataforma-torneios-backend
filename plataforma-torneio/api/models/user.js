@@ -6,7 +6,7 @@ export default (sequelize) => {
         id_usuario: {
             type: DataTypes.UUID,
             defaultValue: DataTypes.UUIDV4,
-            primaryKey: true,
+            primaryKey: true,                  
         },
         nome: {
             type: DataTypes.STRING,
@@ -30,7 +30,7 @@ export default (sequelize) => {
         },
         patente: {
             type: DataTypes.STRING,
-            allowNull: false, //a revisar
+            allowNull: true, //por enquanto
             validate: {
                 notEmpty: true,
             },
