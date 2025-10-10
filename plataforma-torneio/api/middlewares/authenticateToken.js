@@ -8,7 +8,7 @@ export const authenticateToken = (req, res, next) => {
     }
     jwt.verify(token, process.env.MY_SECRET ,(err, user) => {
         if(err){
-            res.status(403).json({error: "Token inválido"});
+            return res.status(403).json({error: "Token inválido"});
         }
         req.user = user;
         next();
