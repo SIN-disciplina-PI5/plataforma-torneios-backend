@@ -1,6 +1,7 @@
 import "dotenv/config";
 import cors from "cors";
 import express from "express";
+import routes from "./routes/index.js";
 
 const app = express();
 app.set("trust proxy", true);
@@ -15,7 +16,7 @@ app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({extended: true}));
 
-
+app.use("/api", routes);
 
 const port = process.env.PORT ?? 3000;
 
