@@ -45,7 +45,7 @@ export default (sequelize) => {
         //sequelize cria createdat e updatedat
     })
     User.beforeCreate(async (user) => {
-        user.password = await bcrypt.hash(user.password, 10);
+        user.senha = await bcrypt.hash(user.senha, 12);
     });
     return User;
 }
