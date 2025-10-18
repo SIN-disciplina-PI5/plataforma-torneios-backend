@@ -7,26 +7,25 @@ import routes from "./routes/index.js";
 const app = express();
 app.set("trust proxy", true);
 
-var corsOptions = {
+const corsOptions = {
   origin: ["http://example.com", "*"],
-  optionsSuccessStatus: 200, 
+  optionsSuccessStatus: 200,
 };
 app.use(cors(corsOptions));
 
-
 app.use(express.json());
-app.use(express.urlencoded({extended: true}));
+app.use(express.urlencoded({ extended: true }));
 
 app.use("/api", routes);
 
-const port = process.env.PORT ?? 3000;
+if (process.env.NODE_ENV !== "test") {
+  const eraseDatabaseOnSync = true;
+  models.sequelize.sync({ force: eraseDatabaseOnSync })
+    .then(() => console.log("Banco sincronizado e tabelas criadas"))
+    .catch(err => console.error("Erro ao sincronizar banco:", err));
 
-const eraseDatabaseOnSync = true;
-models.sequelize.sync({ force: eraseDatabaseOnSync })
-  .then(() => console.log("Banco sincronizado e tabelas criadas"))
-  .catch(err => console.error("Erro ao sincronizar banco:", err));
+  const port = process.env.PORT ?? 3000;
+  app.listen(port, () => console.log(`Listening on ${port}`));
+}
 
-app.listen(port, () => {
-  console.log(`Example app listening on port ${port}!`);
-});
-console.log(`Listening on port ${port}, access via Codespaces URL`);
+export default app;

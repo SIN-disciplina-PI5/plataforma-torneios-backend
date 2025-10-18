@@ -31,9 +31,6 @@ export default (sequelize) => {
         patente: {
             type: DataTypes.STRING,
             allowNull: true, //por enquanto
-            validate: {
-                notEmpty: true,
-            },
         },
         role: {
             type: DataTypes.ENUM("ADMIN", "USER"),
