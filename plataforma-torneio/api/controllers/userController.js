@@ -1,5 +1,6 @@
-import { User } from "../models/user.js";
 import "dotenv/config";
+import models from "../models/index.js";
+const { User, Blacklist } = models;
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
 
@@ -24,26 +25,36 @@ export const login = async (req, res) => {
     }
 }
 
+export const logout = async (req, res) => {
+    const authHeader = req.headers["authorization"];
+    if (!authHeader) {
+        return res.status(401).json({ error: "Não autorizado" });
+    }
+    const token = authHeader.split(" ")[1];
+    const decoded = jwt.decode(token);
+    await Blacklist.create({ token, expiresAt: new Date(decoded.exp * 1000) });
+    res.json({ message: "Você deslogou" });
+}
+
 export const createUser = async (req, res) => {
     try {
         if (!req.body.nome || !req.body.email || !req.body.senha) {
             return res.status(400).json({ error: "Dados faltando para o cadastro de usuário" });
         }
-        const saltRounds = 12;
-        const hashedPassword = await bcrypt.hash(req.body.senha, saltRounds);
+    
 
         const newUser = await User.create({
             nome: req.body.nome,
             email: req.body.email,
-            senha: hashedPassword,
+            senha: req.body.senha,
             patente: null,
             role: "USER",
         });
         const token = jwt.sign({ id: newUser.id_usuario, email: newUser.email, role: newUser.role }, process.env.MY_SECRET, { expiresIn: parseInt(process.env.JWT_EXPIRES_IN) });
-        const {senha, ...safeUser} = newUser.toJSON();
+        const { senha, ...safeUser } = newUser.toJSON();
         return res.status(201).json({ message: "Usuário criado", data: { newUser: safeUser, token: token }, });
     } catch (e) {
-        return res.status(500).json({ error: e.message || "Erro ao cadastrar usuário"});
+        return res.status(500).json({ error: e.message || "Erro ao cadastrar usuário" });
     }
 }
 
