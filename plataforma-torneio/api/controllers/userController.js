@@ -41,7 +41,6 @@ export const createUser = async (req, res) => {
         if (!req.body.nome || !req.body.email || !req.body.senha) {
             return res.status(400).json({ error: "Dados faltando para o cadastro de usuário" });
         }
-    
 
         const newUser = await User.create({
             nome: req.body.nome,
@@ -54,6 +53,7 @@ export const createUser = async (req, res) => {
         const { senha, ...safeUser } = newUser.toJSON();
         return res.status(201).json({ message: "Usuário criado", data: { newUser: safeUser, token: token }, });
     } catch (e) {
+        console.log(e);
         return res.status(500).json({ error: e.message || "Erro ao cadastrar usuário" });
     }
 }
@@ -64,9 +64,6 @@ export const editProfile = async (req, res) => {
         const user = await User.findByPk(userId);
         if (!user) {
             return res.status(404).json({ error: "Usuário não encontrado" });
-        }
-        if (req.body.senha) {
-            req.body.senha = await bcrypt.hash(req.body.senha, 12);
         }
         await user.update(req.body);
         const { senha, ...safeUser } = user.toJSON();

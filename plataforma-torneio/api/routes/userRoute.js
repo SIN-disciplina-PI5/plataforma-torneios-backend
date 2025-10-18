@@ -7,6 +7,6 @@ const router = Router();
 router.post("/login", login);
 router.post("/logout", authenticateToken, logout);
 router.post("/signup", createUser);
-router.patch("/edit", authenticateToken, editProfile);
+router.patch("/edit/:id_usuario", authenticateToken, editProfile);
 
 export default router;
