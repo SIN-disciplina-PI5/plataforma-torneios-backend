@@ -73,3 +73,14 @@ export const editProfile = async (req, res) => {
     }
 }
 
+export const deleteProfile = async (req, res) =>{
+    try{
+        const deleted = await User.destroy({ where: { id_usuario: req.params.id_usuario }});
+        if(!deleted){
+            return res.status(404).json({ error: "Usuário não encontrado" });
+        }
+        return res.status(204).send();
+    }catch(e){
+        return res.status(500).json({ error: e.message });
+    }
+}
