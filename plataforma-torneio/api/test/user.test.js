@@ -55,6 +55,15 @@ describe("Rotas de usuário", () => {
         expect(res.body.email).toBe("novoemail@email.com");
         expect(res.body.role).toBe("ADMIN");
     });
+
+    test("DELETE /api/users/delete/:id_usuario - deve deletar um usuário", async () => {
+        const res = await request(app)
+            .delete(`/api/users/delete/${userId}`)
+            .set("Authorization", `Bearer ${token}`)
+            .expect(204);
+        expect(res.body).toEqual({});
+    });
+
     test("POST /api/users/logout - deve deslogar com sucesso", async () => {
         const res = await request(app)
             .post("/api/users/logout")
