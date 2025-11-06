@@ -1,5 +1,5 @@
 import { Sequelize } from "sequelize";
-import UserModel from "./user.js";
+import UsuarioModel from "./user.js";
 import TorneioModel from "./torneio.js";
 import BlacklistModel from "./blacklist.js";
 import "dotenv/config";
@@ -17,7 +17,7 @@ const sequelize = new Sequelize(process.env.POSTGRES_URL, {
     dialectModule: require("pg"),
 });
 
-const User = UserModel(sequelize, DataTypes);
+const Usuario = UsuarioModel(sequelize, DataTypes);
 const Torneio = TorneioModel(sequelize, DataTypes);
 const Blacklist = BlacklistModel(sequelize, DataTypes);
 
@@ -27,4 +27,4 @@ const Blacklist = BlacklistModel(sequelize, DataTypes);
 
 //torneio e usuario se relacionam por tabela intermediária ainda não criada
 
-export default {sequelize, User, Torneio, Blacklist};
+export default {sequelize, Usuario, Torneio, Blacklist};
