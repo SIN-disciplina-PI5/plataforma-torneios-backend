@@ -59,4 +59,3 @@ const equipeUsuarioController = {
 
 export default equipeUsuarioController;
 
-// necessário revisão do código acima

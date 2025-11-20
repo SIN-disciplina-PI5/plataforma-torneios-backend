@@ -28,7 +28,4 @@ router.delete(
   isResourceOwner('EquipeUsuario'),
   equipeUsuarioController.deleteEquipeUsuario
 );
-
 export default router;
-
-// necessário revisão do código acima
