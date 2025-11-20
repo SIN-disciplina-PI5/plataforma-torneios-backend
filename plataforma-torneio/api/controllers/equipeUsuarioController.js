@@ -25,8 +25,8 @@ const equipeUsuarioController = {
 
   createEquipeUsuario: catchAsync(async (req, res, next) => {
     const equipeUsuario = await equipeUsuarioService.create({
-      text: req.body.text,
-      userId: req.context.me.id,
+      id_equipe: req.body.id_equipe,
+      id_usuario: req.body.id_usuario,
     });
     res.status(201).json({
       status: 'success',
@@ -37,7 +37,10 @@ const equipeUsuarioController = {
   }),
 
   updateEquipeUsuario: catchAsync(async (req, res, next) => {
-    const equipeUsuario = await equipeUsuarioService.update(req.params.equipeUsuarioId, req.body);
+    const equipeUsuario = await equipeUsuarioService.update(req.params.id, {
+     id_equipe: req.body.id_equipe,
+      id_usuario: req.body.id_usuario,
+    });
     res.status(200).json({
       status: 'success',
       data: {
@@ -45,9 +48,8 @@ const equipeUsuarioController = {
       },
     });
   }),
-
   deleteEquipeUsuario: catchAsync(async (req, res, next) => {
-    await equipeUsuarioService.delete(req.params.equipeUsuarioId);
+    await equipeUsuarioService.delete(req.params.id);
     res.status(204).json({
       status: 'success',
       data: null,

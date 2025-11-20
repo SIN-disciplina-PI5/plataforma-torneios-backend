@@ -1,6 +1,6 @@
 import { Router } from "express";
-import equipeUsuarioController  from "../controllers/equipeUsuarioController";
 import { isAuthenticated, isResourceOwner } from "../middlewares/authenticateToken";
+import equipeUsuarioController  from "../controllers/equipeUsuarioController";
 
 const router = Router();
 
@@ -19,7 +19,7 @@ router.put(
   "/:equipeUsuarioId",
   isAuthenticated,
   isResourceOwner('EquipeUsuario'),
-  eEquipeUsuario
+  equipeUsuarioController.updateEquipeUsuario
 );
 
 router.delete(
