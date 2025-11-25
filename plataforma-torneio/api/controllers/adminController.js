@@ -3,34 +3,26 @@ import { loginService } from "../services/authService.js";
 
 export const registerAdmin = async (req, res) => {
   try {
-    const { nome, email, senha } = req.body;
-
-    if (!nome || !email || !senha) {
-      return res.status(400).json({ error: "Preencha todos os campos." });
-    }
-
-    const admin = await createAdminService({ nome, email, senha });
+    const admin = await createAdminService(req.body);
 
     return res.status(201).json({
-      message: "Administrador cadastrado com sucesso!",
-      admin,
+      message: "Administrador criado com sucesso",
+      data: admin,
     });
-  } catch (error) {
-    return res.status(400).json({ error: error.message });
+  } catch (e) {
+    return res.status(400).json({ error: e.message });
   }
 };
 
 export const loginAdmin = async (req, res) => {
   try {
-    const { email, senha } = req.body;
-
-    const token = await loginService(email, senha);
+    const token = await loginService(req.body.email, req.body.senha);
 
     return res.status(200).json({
       message: "Login realizado com sucesso",
       token,
     });
-  } catch (error) {
-    return res.status(401).json({ error: error.message });
+  } catch (e) {
+    return res.status(401).json({ error: e.message });
   }
 };
