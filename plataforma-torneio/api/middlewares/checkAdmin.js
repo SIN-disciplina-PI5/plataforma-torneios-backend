@@ -4,15 +4,16 @@ const checkAdmin = (req, res, next) => {
   const authHeader = req.headers["authorization"];
   const token = authHeader && authHeader.split(" ")[1];
 
-  if (!token) return res.status(401).json({ error: "Acesso negado." });
+  if (!token) return res.status(401).json({ error: "Token não fornecido." });
 
   try {
     const decoded = jwt.verify(token, process.env.MY_SECRET);
 
+    // Garante que é ADMIN
     if (decoded.role !== "ADMIN") {
       return res
         .status(403)
-        .json({ error: "Área restria para Administradores." });
+        .json({ error: "Acesso restrito a administradores." });
     }
 
     req.usuario = decoded;
