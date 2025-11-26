@@ -1,3 +1,4 @@
+
 import models from "../models/index.js";
 
 const equipeUsuarioService = {
@@ -29,7 +30,7 @@ const equipeUsuarioService = {
 
     await item.destroy();
     return true;
-  }
+  },
 };
 
 export default equipeUsuarioService;

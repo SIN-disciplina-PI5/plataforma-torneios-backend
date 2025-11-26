@@ -6,7 +6,6 @@ const getEquipeUsuarioModel = (sequelize, { DataTypes }) => {
       defaultValue: DataTypes.UUIDV4,
       primaryKey: true,
     },
-
     id_equipe: {
       type: DataTypes.UUID,
       allowNull: false,
@@ -30,7 +29,6 @@ const getEquipeUsuarioModel = (sequelize, { DataTypes }) => {
       allowNull: false,
       defaultValue: DataTypes.NOW,
     },
-
     updatedAt: {
       type: DataTypes.DATE,
       allowNull: false,
