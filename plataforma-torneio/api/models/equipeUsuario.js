@@ -10,18 +10,20 @@ const getEquipeUsuarioModel = (sequelize, { DataTypes }) => {
       type: DataTypes.UUID,
       allowNull: false,
       references: {
-        model: 'Equipe',
+        model: 'Equipes',     // ✔️ nome correto da tabela!
         key: 'id_equipe',
       }
     },
+
     id_usuario: {
       type: DataTypes.UUID,
       allowNull: false,
       references: {
-        model: 'Usuario',
+        model: 'Usuarios',    // ✔️ nome correto da tabela!
         key: 'id_usuario',
       }
-    }, 
+    },
+
     createdAt: {
       type: DataTypes.DATE,
       allowNull: false,
@@ -31,16 +33,21 @@ const getEquipeUsuarioModel = (sequelize, { DataTypes }) => {
       type: DataTypes.DATE,
       allowNull: false,
       defaultValue: DataTypes.NOW,
-    },
-      tableName: "EquipeUsuarios",
+    }
+
+  }, {
+    tableName: "EquipeUsuarios",  // ✔️ AGORA está no lugar certo
+    timestamps: true
   });
 
+  // Associações
   EquipeUsuario.associate = (models) => {
-  EquipeUsuario.belongsTo(models.Equipe, {
+    EquipeUsuario.belongsTo(models.Equipe, {
       foreignKey: 'id_equipe',
       as: 'equipe',
     });
-  EquipeUsuario.belongsTo(models.Usuario, {
+
+    EquipeUsuario.belongsTo(models.Usuario, {
       foreignKey: 'id_usuario',
       as: 'usuario',
     });
