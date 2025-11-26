@@ -3,8 +3,8 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "start": "nodemon --exec babel-node api/index.js",
-    "test": "jest --runInBand --detectOpenHandles"
+   "start": "nodemon api/index.js",
+   "dev": "nodemon api/index.js"
   },
   "keywords": [],
   "author": "Equipe 2",
