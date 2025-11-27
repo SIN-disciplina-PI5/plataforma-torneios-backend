@@ -19,7 +19,7 @@ export default (sequelize) => {
         type: DataTypes.UUID,
         allowNull: false,
         references: {
-          model: "Torneio",
+          model: "Torneios",
           key: "id_torneio",
         },
         onUpdate: "CASCADE",
