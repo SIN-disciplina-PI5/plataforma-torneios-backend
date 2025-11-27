@@ -1,105 +1,82 @@
 import "dotenv/config.js";
-import models from "../models/index.js";
-const { Inscricao, Torneio, Equipe } = models;
+import {
+  createInscricaoService,
+  getAllInscricoesService,
+  getInscricaoByIdService,
+  updateInscricaoService,
+  deleteInscricaoService,
+} from "../services/inscricaoService.js";
 
 export const createInscricao = async (req, res) => {
   try {
     const { id_equipe, id_torneio } = req.body;
+
     if (!id_equipe || !id_torneio) {
-      return res
-        .status(400)
-        .json({ error: "Dados faltando para realizar a inscrição" });
-    }
-    const equipe = await Equipe.findByPk(id_equipe);
-    const torneio = await Torneio.findByPk(id_torneio);
-
-    if (!equipe || !torneio) {
-      return res
-        .status(404)
-        .json({ error: "Equipe ou Torneio não encontrados" });
-    }
-    const inscricaoExistente = await Inscricao.findOne({
-      where: { id_equipe, id_torneio },
-    });
-
-    if (inscricaoExistente) {
       return res.status(400).json({
-        error: "Essa equipe já está inscrita neste torneio",
+        error: "id_equipe e id_torneio são obrigatórios",
       });
     }
 
-    const newInscricao = await Inscricao.create({
+    const newInscricao = await createInscricaoService({
       id_equipe,
       id_torneio,
     });
-    return res
-      .status(201)
-      .json({ message: "Inscrição criada com sucesso", data: newInscricao });
+
+    return res.status(201).json({
+      message: "Inscrição criada com sucesso",
+      data: newInscricao,
+    });
   } catch (e) {
-    console.error(e);
-    return res
-      .status(500)
-      .json({ error: e.message || "Erro ao criar inscrição" });
+    return res.status(400).json({ error: e.message });
   }
 };
 
 export const getAllInscricoes = async (req, res) => {
   try {
-    const inscricoes = await Inscricao.findAll();
+    const inscricoes = await getAllInscricoesService();
     return res.status(200).json({ data: inscricoes });
   } catch (e) {
-    return res
-      .status(500)
-      .json({ error: e.message || "Erro ao buscar inscrições" });
+    return res.status(500).json({ error: e.message });
   }
 };
 
 export const getInscricaoById = async (req, res) => {
   try {
-    const { id } = req.params;
-    const inscricao = await Inscricao.findByPk(id);
-    if (!inscricao) {
-      return res.status(404).json({ error: "Inscrição não encontrada" });
-    }
+    const inscricao = await getInscricaoByIdService(req.params.id);
     return res.status(200).json({ data: inscricao });
   } catch (e) {
-    return res
-      .status(500)
-      .json({ error: e.message || "Erro ao buscar inscrição" });
+    return res.status(404).json({ error: e.message });
   }
 };
 
 export const updateInscricao = async (req, res) => {
   try {
-    const { id } = req.params;
     const { status } = req.body;
-    const inscricao = await Inscricao.findByPk(id);
-    if (!inscricao) {
-      return res.status(404).json({ error: "Inscrição não encontrada" });
+
+    const allowedStatus = ["AGUARDANDO", "APROVADA", "REJEITADA"];
+
+    if (status && !allowedStatus.includes(status)) {
+      return res.status(400).json({ error: "Status inválido" });
     }
-    await inscricao.update({ status });
-    return res
-      .status(200)
-      .json({ message: "Inscrição atualizada com sucesso", data: inscricao });
+
+    const inscricaoAtualizada = await updateInscricaoService(req.params.id, {
+      status,
+    });
+
+    return res.status(200).json({
+      message: "Inscrição atualizada com sucesso",
+      data: inscricaoAtualizada,
+    });
   } catch (e) {
-    return res
-      .status(500)
-      .json({ error: e.message || "Erro ao atualizar inscrição" });
+    return res.status(400).json({ error: e.message });
   }
 };
 
 export const deleteInscricao = async (req, res) => {
   try {
-    const { id } = req.params;
-    const inscricao = await Inscricao.findByPk(id);
-    if (!inscricao) {
-      return res.status(404).json({ error: "Inscrição não encontrada" });
-    }
-    await inscricao.destroy();
+    await deleteInscricaoService(req.params.id);
     return res.status(204).send();
   } catch (e) {
-    return res
-      .status(500)
-      .json({ error: e.message || "Erro ao deletar inscrição" });
+    return res.status(404).json({ error: e.message });
   }
 };
