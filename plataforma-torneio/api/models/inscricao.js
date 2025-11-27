@@ -37,8 +37,8 @@ export default (sequelize) => {
       },
     },
     {
-      tableName: "inscricao", // nome exato da tabela no PostgreSQL
-      freezeTableName: true, // evita pluralização
+      tableName: "inscricao", // força o nome da tabela em minúsculo
+      freezeTableName: true, // evita pluralização automática
     }
   );
 
