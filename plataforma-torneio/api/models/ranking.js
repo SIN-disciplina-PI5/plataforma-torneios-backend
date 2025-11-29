@@ -45,13 +45,8 @@ const getRankingModel = (sequelize, { DataTypes }) => {
     }
   );
 
-  // Associação: Um Ranking pertence a um Usuário
-  Ranking.associate = (models) => {
-    Ranking.belongsTo(models.Usuario, {
-      foreignKey: "id_usuario",
-      as: "usuario",
-    });
-  };
+  // Associação tirada
+
 
   return Ranking;
 };

@@ -4,6 +4,7 @@ import torneioRoute from "./torneioRoute.js";
 import inscricaoRoute from "./inscricaoRoute.js";
 import equipeRoute from "./equipeRoute.js";
 import adminRoute from "./adminRoute.js";
+import rankingRoutes from "./rankingRoute.js"; 
 
 const router = Router();
 
@@ -12,5 +13,6 @@ router.use("/torneio", torneioRoute);
 router.use("/inscricoes", inscricaoRoute);
 router.use("/equipe", equipeRoute);
 router.use("/admin", adminRoute);
+router.use("/ranking", rankingRoutes(models)); 
 
 export default router;
