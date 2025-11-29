@@ -26,3 +26,23 @@ export const deletarPerfil = async (req, res) => {
     return res.status(400).json({ error: e.message });
   }
 };
+
+/*   concluir depois que inserirem equipe e equipeusuario
+export const visualizarHistorico = async (req, res) => {
+  try {
+    const historico = await visualizarHistoricoService(req.user.id_usuario);
+    return res.status(200).json(historico);
+  } catch (e) {
+    return res.status(500).json({ error: e.message });
+  }
+};
+
+export const visualizarRanking = async (req, res) => {
+  try {
+    const ranking = await visualizarRankingService();
+    return res.status(200).json(ranking);
+  } catch (e) {
+    return res.status(500).json({ error: e.message });
+  }
+};
+*/

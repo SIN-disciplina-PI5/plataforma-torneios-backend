@@ -26,9 +26,10 @@ app.use("/api", routes);
 
 if (process.env.NODE_ENV !== "test") {
   const eraseDatabaseOnSync = true;
-  models.sequelize.sync({ force: eraseDatabaseOnSync })
+  models.sequelize
+    .sync({ force: eraseDatabaseOnSync })
     .then(() => console.log("Banco sincronizado e tabelas criadas"))
-    .catch(err => console.error("Erro ao sincronizar banco:", err));
+    .catch((err) => console.error("Erro ao sincronizar banco:", err));
 
   const port = process.env.PORT ?? 3000;
   app.listen(port, () => console.log(`Listening on ${port}`));
