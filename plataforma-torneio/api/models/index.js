@@ -62,14 +62,12 @@ Inscricao.belongsTo(Torneio, {
   foreignKey: "id_torneio",
   as: "torneio",
 });
-
-export {
-  sequelize,
+export default {
   Usuario,
   Torneio,
-  Blacklist,
   Inscricao,
+  Blacklist,
   Equipe,
   EquipeUsuario,
-};
-export default sequelize;
+}
+export {sequelize};
