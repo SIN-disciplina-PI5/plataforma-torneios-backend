@@ -5,6 +5,7 @@ import pg from "pg";
 import UsuarioModel from "./user.js";
 import TorneioModel from "./torneio.js";
 import BlacklistModel from "./blacklist.js";
+import InscricaoModel from "./inscricao.js";
 import getEquipeModel from "./equipe.js";
 import getEquipeUsuarioModel from "./equipeUsuario.js";
 import InscricaoModel from "./inscricao.js";
