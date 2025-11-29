@@ -5,9 +5,9 @@ import pg from "pg";
 import UsuarioModel from "./user.js";
 import TorneioModel from "./torneio.js";
 import BlacklistModel from "./blacklist.js";
-import InscricaoModel from "./inscricao.js";
 import getEquipeModel from "./equipe.js";
-// import getEquipeUsuarioModel from "./equipeUsuario.js";
+import getEquipeUsuarioModel from "./equipeUsuario.js";
+import InscricaoModel from "./inscricao.js";
 import getRankingModel from "./ranking.js";
 
 const sequelize = new Sequelize(process.env.POSTGRES_URL, {
@@ -25,7 +25,7 @@ const Torneio = TorneioModel(sequelize);
 const Inscricao = InscricaoModel(sequelize);
 const Blacklist = BlacklistModel(sequelize, DataTypes);
 const Equipe = getEquipeModel(sequelize, { DataTypes });
-// const EquipeUsuario = getEquipeUsuarioModel(sequelize, { DataTypes });
+const EquipeUsuario = getEquipeUsuarioModel(sequelize, { DataTypes });
 const Ranking = getRankingModel(sequelize, { DataTypes });
 
 // Relacionamentos
@@ -86,7 +86,7 @@ export {
   Blacklist,
   Inscricao,
   Equipe,
-  // EquipeUsuario,
+  EquipeUsuario,
   Ranking
 };
 export default sequelize;
