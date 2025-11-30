@@ -8,6 +8,7 @@ import BlacklistModel from "./blacklist.js";
 import InscricaoModel from "./inscricao.js";
 import getEquipeModel from "./equipe.js";
 import getEquipeUsuarioModel from "./equipeUsuario.js";
+import getRankingModel from "./ranking.js";
 
 const sequelize = new Sequelize(process.env.POSTGRES_URL, {
   dialect: "postgres",
@@ -25,6 +26,7 @@ const Inscricao = InscricaoModel(sequelize);
 const Blacklist = BlacklistModel(sequelize, DataTypes);
 const Equipe = getEquipeModel(sequelize, { DataTypes });
 const EquipeUsuario = getEquipeUsuarioModel(sequelize, { DataTypes });
+const Ranking = getRankingModel(sequelize, { DataTypes });
 
 // Relacionamentos
 
@@ -62,6 +64,19 @@ Inscricao.belongsTo(Torneio, {
   foreignKey: "id_torneio",
   as: "torneio",
 });
+
+//ranking
+
+Usuario.hasOne(Ranking, {
+  foreignKey: "id_usuario",
+  as: "ranking",
+});
+
+Ranking.belongsTo(Usuario, {
+  foreignKey: "id_usuario",
+  as: "usuario",
+});
+
 export default {
   Usuario,
   Torneio,
@@ -69,5 +84,6 @@ export default {
   Blacklist,
   Equipe,
   EquipeUsuario,
+  Ranking
 }
 export {sequelize};

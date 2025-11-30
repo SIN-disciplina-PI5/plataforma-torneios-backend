@@ -6,12 +6,15 @@ export const criarUsuarioService = async (dados) => {
   const { nome, email, senha } = dados;
   if (!nome || !email || !senha) throw new Error("Dados faltando");
 
+  const usuarioExistente = await Usuario.findOne({ where: { email } });
+  if (usuarioExistente) throw new Error("Email já cadastrado");
+
   const novoUsuario = await Usuario.create({
     nome,
     email,
-    senha,
+    senha: senha,
     patente: null,
-    role: "USER",
+    role: "USER" // Ajustar conforme necessário,
   });
 
   const token = jwt.sign(
@@ -27,6 +30,7 @@ export const criarUsuarioService = async (dados) => {
 export const editarUsuarioService = async (id, dados) => {
   const usuario = await Usuario.findByPk(id);
   if (!usuario) throw new Error("Usuário não encontrado");
+  
   await usuario.update(dados);
   const { senha, ...usuarioSeguro } = usuario.toJSON();
   return usuarioSeguro;
@@ -36,7 +40,6 @@ export const deletarUsuarioService = async (id) => {
   const deletado = await Usuario.destroy({ where: { id_usuario: id } });
   if (!deletado) throw new Error("Usuário não encontrado");
 };
-
 /* continuar e testar quando equipe e equipeusuario estiverem disponiveis (lembrar de importar)
 export const visualizarHistoricoService = async (userId) => {
   const equipes = await EquipeUsuario.findAll({

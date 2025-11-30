@@ -13,6 +13,10 @@ const corsOptions = {
 };
 app.use(cors(corsOptions));
 
+app.get('/', (req, res) => {
+  res.send('<h1>API do Torneio Funcionando!</h1><p>Acesse as rotas de Torneios, Usuários, etc.</p>');
+});
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
