@@ -6,6 +6,7 @@ import UsuarioModel from "./user.js";
 import TorneioModel from "./torneio.js";
 import BlacklistModel from "./blacklist.js";
 import InscricaoModel from "./inscricao.js";
+import PartidaModel from "./partida.js";
 import getEquipeModel from "./equipe.js";
 import getEquipeUsuarioModel from "./equipeUsuario.js";
 import getRankingModel from "./ranking.js";
@@ -27,6 +28,7 @@ const Blacklist = BlacklistModel(sequelize, DataTypes);
 const Equipe = getEquipeModel(sequelize, { DataTypes });
 const EquipeUsuario = getEquipeUsuarioModel(sequelize, { DataTypes });
 const Ranking = getRankingModel(sequelize, { DataTypes });
+const Partida = PartidaModel(sequelize);
 
 // Relacionamentos
 
@@ -77,6 +79,16 @@ Ranking.belongsTo(Usuario, {
   as: "usuario",
 });
 
+// partida
+
+Partida.belongsTo(Torneio, {
+   foreignKey: "id_torneio" 
+  });
+
+  Torneio.hasMany(Partida, {
+     foreignKey: "id_torneio"
+     });
+
 export default {
   Usuario,
   Torneio,
@@ -84,6 +96,8 @@ export default {
   Blacklist,
   Equipe,
   EquipeUsuario,
-  Ranking
+  Ranking,
+  Partida
 }
+
 export {sequelize};
