@@ -1,4 +1,6 @@
-const getRankingModel = (sequelize, { DataTypes }) => {
+export default (sequelize) => {
+  const { DataTypes } = sequelize.Sequelize;
+  
   const Ranking = sequelize.define(
     "Ranking",
     {
@@ -45,10 +47,5 @@ const getRankingModel = (sequelize, { DataTypes }) => {
     }
   );
 
-  // Associação tirada
-
-
   return Ranking;
 };
-
-export default getRankingModel;
