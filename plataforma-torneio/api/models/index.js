@@ -78,15 +78,16 @@ Ranking.belongsTo(Usuario, {
 });
 
 
+export default sequelize;
 
-export default {
+
+export {
+  sequelize,
   Usuario,
   Torneio,
   Inscricao,
   Blacklist,
   Equipe,
   EquipeUsuario,
-  Ranking,
-}
-
-export {sequelize};
+  Ranking
+};
