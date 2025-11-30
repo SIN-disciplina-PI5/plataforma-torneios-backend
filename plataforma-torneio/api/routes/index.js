@@ -5,6 +5,9 @@ import inscricaoRoute from "./inscricaoRoute.js";
 import equipeRoute from "./equipeRoute.js";
 import adminRoute from "./adminRoute.js";
 import rankingRoute from "./rankingRoute.js"; 
+import partidaRoute from "./partidaRoute.js";
+
+
 
 const router = Router();
 
@@ -14,5 +17,7 @@ router.use("/inscricoes", inscricaoRoute);
 router.use("/equipe", equipeRoute);
 router.use("/admin", adminRoute);
 router.use("/ranking", rankingRoute); 
+router.use("/partidas", partidaRoute);
+
 
 export default router;
