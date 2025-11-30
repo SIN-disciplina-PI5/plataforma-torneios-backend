@@ -83,10 +83,9 @@ export {
   sequelize,
   Usuario,
   Torneio,
-  Blacklist,
   Inscricao,
+  Blacklist,
   Equipe,
-  // EquipeUsuario,
-  Ranking
-};
-export default sequelize;
+  EquipeUsuario,
+}
+export {sequelize};
