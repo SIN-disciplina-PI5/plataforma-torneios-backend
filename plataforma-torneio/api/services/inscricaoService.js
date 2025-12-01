@@ -7,12 +7,12 @@ export const createInscricaoService = async ({ id_equipe, id_torneio }) => {
     throw new Error("Dados faltando para realizar a inscrição");
   }
 
-  //const equipe = await Equipe.findByPk(id_equipe);
+  const equipe = await Equipe.findByPk(id_equipe);
   const torneio = await Torneio.findByPk(id_torneio);
 
-  /*if (!equipe || !torneio) {
-        throw new Error("Equipe ou Torneio não encontrados");
-    }*/
+  if (!equipe || !torneio) {
+    throw new Error("Equipe ou Torneio não encontrados");
+  }
 
   const inscricaoExistente = await Inscricao.findOne({
     where: { id_equipe, id_torneio },
