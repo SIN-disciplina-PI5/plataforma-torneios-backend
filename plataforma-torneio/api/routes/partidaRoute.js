@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { authenticateToken } from "../middlewares/authenticateToken.js";
 import { rateLimiter } from "../middlewares/rateLimiter.js";
-import { checkAdmin } from "../middlewares/checkAdmin.js";
+import checkAdmin from "../middlewares/checkAdmin.js";
 import {
   criarPartida,
   buscarPartida,

@@ -1,5 +1,5 @@
 import models from "../models/index.js";
-const { Usuario } = models;
+const {  Usuario, Ranking, EquipeUsuario, PartidaUsuario, Partida } = models;
 import jwt from "jsonwebtoken";
 
 export const criarUsuarioService = async (dados) => {
@@ -14,7 +14,7 @@ export const criarUsuarioService = async (dados) => {
     email,
     senha: senha,
     patente: null,
-    role: "USER" // Ajustar conforme necessário,
+    role: "USER" 
   });
 
   const token = jwt.sign(
@@ -40,7 +40,7 @@ export const deletarUsuarioService = async (id) => {
   const deletado = await Usuario.destroy({ where: { id_usuario: id } });
   if (!deletado) throw new Error("Usuário não encontrado");
 };
-/* continuar e testar quando equipe e equipeusuario estiverem disponiveis (lembrar de importar)
+
 export const visualizarHistoricoService = async (userId) => {
   const equipes = await EquipeUsuario.findAll({
     where: { id_usuario: userId },
@@ -82,4 +82,3 @@ export const visualizarRankingService = async () => {
   });
   return { ranking };
 };
-*/

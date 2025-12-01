@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { authenticateToken } from "../middlewares/authenticateToken.js";
 import { rateLimiter } from "../middlewares/rateLimiter.js";
-import { isAdmin } from "../middlewares/authorize.js";
+import checkAdmin from "../middlewares/checkAdmin.js";
 import {
   criarPartidaUsuario,
   buscarPartidaUsuario,
@@ -14,13 +14,13 @@ import {
 
 const router = Router();
 
-router.post("/", authenticateToken, isAdmin, rateLimiter, criarPartidaUsuario);
+router.post("/", authenticateToken, checkAdmin, rateLimiter, criarPartidaUsuario);
 router.get("/", authenticateToken, listarPartidasUsuario);
 router.get("/:id_partida_usuario", authenticateToken, buscarPartidaUsuario);
-router.patch("/edit/:id_partida_usuario", authenticateToken, isAdmin, rateLimiter, editarPartidaUsuario);
-router.delete("/delete/:id_partida_usuario", authenticateToken, isAdmin, rateLimiter, deletarPartidaUsuario);
+router.patch("/edit/:id_partida_usuario", authenticateToken, checkAdmin, rateLimiter, editarPartidaUsuario);
+router.delete("/delete/:id_partida_usuario", authenticateToken, checkAdmin, rateLimiter, deletarPartidaUsuario);
 
-router.post("/vincular/:id_partida", authenticateToken, isAdmin, rateLimiter, vincularJogador);
-router.patch("/resultado/:id_partida_usuario", authenticateToken, isAdmin, rateLimiter, definirResultado);
+router.post("/vincular/:id_partida", authenticateToken, checkAdmin, rateLimiter, vincularJogador);
+router.patch("/resultado/:id_partida_usuario", authenticateToken, checkAdmin, rateLimiter, definirResultado);
 
 export default router;
