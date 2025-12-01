@@ -1,25 +1,24 @@
-
 import models from "../models/index.js";
-const { PartidaUsuario, Partida, Usuario } = models;
+const { PartidaUsuario, Partida, Equipe } = models; 
 
 export const criarPartidaUsuarioService = async (dados) => {
-  const { id_partida, id_usuario } = dados;
-  if (!id_partida || !id_usuario) throw new Error("Dados faltando");
+  const { id_partida, id_equipe } = dados; 
+  if (!id_partida || !id_equipe) throw new Error("Dados faltando");
 
   const partida = await Partida.findByPk(id_partida);
   if (!partida) throw new Error("Partida não encontrada");
 
-  const usuario = await Usuario.findByPk(id_usuario);
-  if (!usuario) throw new Error("Usuário não encontrada");
+  const equipe = await Equipe.findByPk(id_equipe); 
+  if (!equipe) throw new Error("Equipe não encontrada");
 
   const vinculoExistente = await PartidaUsuario.findOne({
-    where: { id_partida, id_usuario }
+    where: { id_partida, id_equipe } 
   });
-  if (vinculoExistente) throw new Error("Jogador já vinculado a esta partida");
+  if (vinculoExistente) throw new Error("Equipe já vinculada a esta partida");
 
   const novoVinculo = await PartidaUsuario.create({
     id_partida,
-    id_usuario
+    id_equipe, 
   });
 
   return novoVinculo;
@@ -33,8 +32,9 @@ export const buscarPartidaUsuarioService = async (id) => {
         attributes: ['fase', 'status', 'horario']
       },
       {
-        model: Usuario,
-        attributes: ['nome', 'email']
+        model: Equipe, 
+        as: 'equipe', 
+        attributes: ['nome'] 
       }
     ]
   });
@@ -51,8 +51,9 @@ export const listarPartidasUsuarioService = async (filtros = {}) => {
         attributes: ['fase', 'status', 'horario']
       },
       {
-        model: Usuario,
-        attributes: ['nome', 'email']
+        model: Equipe, 
+        as: 'equipe',
+        attributes: ['nome']
       }
     ]
   });
@@ -66,12 +67,17 @@ export const editarPartidaUsuarioService = async (id, dados) => {
 };
 
 export const deletarPartidaUsuarioService = async (id) => {
-  const deletado = await PartidaUsuario.destroy({ where: { id_partida_usuario: id } });
+  const deletado = await PartidaUsuario.destroy({ 
+    where: { id_partida_usuario: id } 
+  });
   if (!deletado) throw new Error("Vínculo não encontrado");
 };
 
-export const vincularJogadorService = async (id_partida, id_usuario) => {
-  return await criarPartidaUsuarioService({ id_partida, id_usuario });
+export const vincularJogadorService = async (id_partida, id_equipe) => { 
+  return await criarPartidaUsuarioService({ 
+    id_partida, 
+    id_equipe 
+  });
 };
 
 export const definirResultadoService = async (id_partida_usuario, status) => {

@@ -14,7 +14,7 @@ export const criarUsuarioService = async (dados) => {
     email,
     senha: senha,
     patente: null,
-    role: "USER" 
+    role: "USER"
   });
 
   const token = jwt.sign(
@@ -25,6 +25,21 @@ export const criarUsuarioService = async (dados) => {
 
   const { senha: _, ...usuarioSeguro } = novoUsuario.toJSON();
   return { novoUsuario: usuarioSeguro, token };
+};
+
+export const getAllUsuariosService = async () => {
+  const usuarios = await Usuario.findAll({
+    attributes: { exclude: ['senha'] }
+  });
+  return usuarios;
+};
+
+export const getUsuarioByIdService = async (id) => {
+  const usuario = await Usuario.findByPk(id, {
+    attributes: { exclude: ['senha'] }
+  });
+  if (!usuario) throw new Error("Usuário não encontrado");
+  return usuario;
 };
 
 export const editarUsuarioService = async (id, dados) => {
@@ -46,6 +61,7 @@ export const visualizarHistoricoService = async (userId) => {
     where: { id_usuario: userId },
     attributes: ["id_equipe"],
   });
+  
   if (!equipes || equipes.length === 0)
     throw new Error("Usuário não está vinculado a nenhuma equipe.");
 

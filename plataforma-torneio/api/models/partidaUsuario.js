@@ -11,7 +11,7 @@ export default (sequelize) => {
       type: DataTypes.UUID,
       allowNull: false,
     },
-    id_usuario: {
+    id_equipe: {  
       type: DataTypes.UUID,
       allowNull: false,
     },

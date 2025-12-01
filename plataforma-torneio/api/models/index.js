@@ -96,11 +96,25 @@ Partida.belongsTo(Torneio, {
      });
 
      
-Partida.hasMany(PartidaUsuario, { foreignKey: "id_partida" });
-PartidaUsuario.belongsTo(Partida, { foreignKey: "id_partida" });
+Partida.hasMany(PartidaUsuario, { 
+  foreignKey: "id_partida",
+  as: "equipesPartida" 
+});
 
-Usuario.hasMany(PartidaUsuario, { foreignKey: "id_usuario" });
-PartidaUsuario.belongsTo(Usuario, { foreignKey: "id_usuario" });
+PartidaUsuario.belongsTo(Partida, { 
+  foreignKey: "id_partida",
+  as: "partida" 
+});
+
+Equipe.hasMany(PartidaUsuario, { 
+  foreignKey: "id_equipe",
+  as: "partidasEquipe" 
+});
+
+PartidaUsuario.belongsTo(Equipe, { 
+  foreignKey: "id_equipe",
+  as: "equipe" 
+});
 
 export default {
   Usuario,
