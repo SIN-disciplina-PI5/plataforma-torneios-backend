@@ -6,11 +6,13 @@ import {
   updateInscricao,
   deleteInscricao,
 } from "../controllers/inscricaoController.js";
+import { authenticateToken } from "../middlewares/authenticateToken.js";
+import checkAdmin from "../middlewares/checkAdmin.js";
 
 const router = Router();
 
 // Criar uma nova inscrição
-router.post("/", createInscricao);
+router.post("/", authenticateToken, createInscricao);
 
 // Buscar todas as inscrições
 router.get("/", getAllInscricoes);
@@ -19,9 +21,9 @@ router.get("/", getAllInscricoes);
 router.get("/:id", getInscricaoById);
 
 // Atualizar status da inscrição
-router.put("/:id", updateInscricao);
+router.put("/:id", authenticateToken, checkAdmin, updateInscricao);
 
 // Deletar inscrição
-router.delete("/:id", deleteInscricao);
+router.delete("/:id", authenticateToken, checkAdmin, deleteInscricao);
 
 export default router;

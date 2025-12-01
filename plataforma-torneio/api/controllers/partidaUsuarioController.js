@@ -55,8 +55,8 @@ export const deletarPartidaUsuario = async (req, res) => {
 
 export const vincularJogador = async (req, res) => {
   try {
-    const { id_usuario } = req.body;
-    const vinculo = await vincularJogadorService(req.params.id_partida, id_usuario);
+    const { id_equipe } = req.body; 
+    const vinculo = await vincularJogadorService(req.params.id_partida, id_equipe);
     return res.status(200).json(vinculo);
   } catch (e) {
     return res.status(400).json({ error: e.message });

@@ -1,5 +1,5 @@
 import models from "../models/index.js";
-const { Inscricao, Torneio } = models;
+const { Inscricao, Torneio, Equipe } = models;
 
 // Criar nova inscrição
 export const createInscricaoService = async ({ id_equipe, id_torneio }) => {
