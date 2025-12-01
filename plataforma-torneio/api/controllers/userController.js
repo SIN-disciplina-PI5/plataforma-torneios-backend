@@ -1,4 +1,4 @@
-import { criarUsuarioService, editarUsuarioService, deletarUsuarioService, } from "../services/userService.js";
+import { criarUsuarioService, editarUsuarioService, deletarUsuarioService, visualizarHistoricoService, visualizarRankingService } from "../services/userService.js";
 
 export const criarUsuario = async (req, res) => {
   try {
@@ -27,7 +27,6 @@ export const deletarPerfil = async (req, res) => {
   }
 };
 
-/*   concluir depois que inserirem equipe e equipeusuario
 export const visualizarHistorico = async (req, res) => {
   try {
     const historico = await visualizarHistoricoService(req.user.id_usuario);
@@ -45,4 +44,4 @@ export const visualizarRanking = async (req, res) => {
     return res.status(500).json({ error: e.message });
   }
 };
-*/
+
