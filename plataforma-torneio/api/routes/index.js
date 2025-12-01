@@ -6,7 +6,7 @@ import equipeRoute from "./equipeRoute.js";
 import adminRoute from "./adminRoute.js";
 import rankingRoute from "./rankingRoute.js"; 
 import partidaRoute from "./partidaRoute.js";
-
+import partidaUsuarioRoute from "./partidaUsuarioRoute.js";
 
 
 const router = Router();
@@ -18,6 +18,7 @@ router.use("/equipe", equipeRoute);
 router.use("/admin", adminRoute);
 router.use("/ranking", rankingRoute); 
 router.use("/partidas", partidaRoute);
+router.use("/partida-usuarios", partidaUsuarioRoute);
 
 
 export default router;
