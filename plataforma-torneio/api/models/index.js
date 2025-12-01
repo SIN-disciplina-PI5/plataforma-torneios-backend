@@ -10,6 +10,7 @@ import PartidaModel from "./partida.js";
 import getEquipeModel from "./equipe.js";
 import getEquipeUsuarioModel from "./equipeUsuario.js";
 import getRankingModel from "./ranking.js";
+import partidaUsuarioModel from "./partidaUsuario.js"
 
 const sequelize = new Sequelize(process.env.POSTGRES_URL, {
   dialect: "postgres",
@@ -29,7 +30,7 @@ const Equipe = getEquipeModel(sequelize, { DataTypes });
 const EquipeUsuario = getEquipeUsuarioModel(sequelize, { DataTypes });
 const Ranking = getRankingModel(sequelize, { DataTypes });
 const Partida = PartidaModel(sequelize);
-
+const PartidaUsuario = partidaUsuarioModel(sequelize, DataTypes); 
 // Relacionamentos
 
 Usuario.belongsToMany(Equipe, {
@@ -67,6 +68,11 @@ Inscricao.belongsTo(Torneio, {
   as: "torneio",
 });
 
+Partida.belongsTo(Torneio, { foreignKey: "id_torneio" });
+Torneio.hasMany(Partida, { foreignKey: "id_torneio" });
+
+
+
 //ranking
 
 Usuario.hasOne(Ranking, {
@@ -89,6 +95,13 @@ Partida.belongsTo(Torneio, {
      foreignKey: "id_torneio"
      });
 
+     
+Partida.hasMany(PartidaUsuario, { foreignKey: "id_partida" });
+PartidaUsuario.belongsTo(Partida, { foreignKey: "id_partida" });
+
+Usuario.hasMany(PartidaUsuario, { foreignKey: "id_usuario" });
+PartidaUsuario.belongsTo(Usuario, { foreignKey: "id_usuario" });
+
 export default {
   Usuario,
   Torneio,
@@ -97,7 +110,8 @@ export default {
   Equipe,
   EquipeUsuario,
   Ranking,
-  Partida
+  Partida,
+  PartidaUsuario
 }
 
 export {sequelize};
