@@ -11,10 +11,8 @@ router.post("/logout", authenticateToken, logout);
 router.post("/signup", rateLimiter, criarUsuario);
 router.patch("/edit/:id_usuario", authenticateToken, rateLimiter, editarPerfil);
 router.delete("/delete/:id_usuario", authenticateToken, rateLimiter, deletarPerfil);
-
-/*
 router.get("/historico", authenticateToken, visualizarHistorico);  
 router.get("/ranking", authenticateToken, visualizarRanking);
-*/
+
 
 export default router;
