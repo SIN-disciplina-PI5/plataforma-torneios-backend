@@ -10,7 +10,7 @@ const getEquipeUsuarioModel = (sequelize, { DataTypes }) => {
       type: DataTypes.UUID,
       allowNull: false,
       references: {
-        model: 'Equipes',     // ✔️ nome correto da tabela!
+        model: 'Equipes',     
         key: 'id_equipe',
       }
     },
@@ -19,7 +19,7 @@ const getEquipeUsuarioModel = (sequelize, { DataTypes }) => {
       type: DataTypes.UUID,
       allowNull: false,
       references: {
-        model: 'Usuarios',    // ✔️ nome correto da tabela!
+        model: 'Usuarios',   
         key: 'id_usuario',
       }
     },
@@ -36,7 +36,7 @@ const getEquipeUsuarioModel = (sequelize, { DataTypes }) => {
     }
 
   }, {
-    tableName: "EquipeUsuarios",  // ✔️ AGORA está no lugar certo
+    tableName: "EquipeUsuarios",  
     timestamps: true
   });
 
