@@ -7,11 +7,7 @@ import routes from "./routes/index.js";
 const app = express();
 app.set("trust proxy", true);
 
-const corsOptions = {
-  origin: ["http://example.com", "*"],
-  optionsSuccessStatus: 200,
-};
-app.use(cors(corsOptions));
+app.use(cors());
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
