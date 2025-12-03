@@ -4,15 +4,23 @@ const { Usuario } = models;
 
 export const createAdminService = async (dados) => {
   // Desestrutura os dados que vieram do req.body
-  const { nome, email, senha } = dados;
+  const { nome, email, senha, secretKey } = dados;
 
-  // 1. Verifica duplicidade
+  // 1. VALIDAÇÃO DE SEGURANÇA
+  // Se a chave não vier ou estiver errada, bloqueia o cadastro.
+  if (secretKey !== process.env.ADMIN_SECRET_KEY) {
+    throw new Error(
+      "Chave de segurança inválida. Você não tem permissão para criar um Admin."
+    );
+  }
+
+  // 2. Verifica duplicidade
   const usuarioExistente = await Usuario.findOne({ where: { email } });
   if (usuarioExistente) {
     throw new Error("E-mail já cadastrado.");
   }
 
-  // 2. Cria o admin. A senha é criptografada automaticamente pelo model.
+  // 3. Cria o admin. A senha é criptografada automaticamente pelo model.
   const novoAdmin = await Usuario.create({
     nome,
     email,
@@ -21,7 +29,7 @@ export const createAdminService = async (dados) => {
     patente: "Administrador",
   });
 
-  // 3. Retorna os dados limpos
+  // 4. Retorna os dados limpos
   return {
     id_usuario: novoAdmin.id_usuario,
     nome: novoAdmin.nome,
