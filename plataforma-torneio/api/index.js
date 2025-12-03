@@ -7,7 +7,11 @@ import routes from "./routes/index.js";
 const app = express();
 app.set("trust proxy", true);
 
-app.use(cors());
+const corsOptions = {
+  origin: ["http://example.com", "*"],
+  optionsSuccessStatus: 200,
+};
+app.use(cors(corsOptions));
 
 app.get('/', (req, res) => {
   res.send('<h1>API do Torneio Funcionando!</h1><p>Acesse as rotas de Torneios, Usuários, etc.</p>');
