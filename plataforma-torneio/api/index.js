@@ -7,14 +7,13 @@ import routes from "./routes/index.js";
 const app = express();
 app.set("trust proxy", true);
 
-const corsOptions = {
-  origin: ["http://example.com", "*"],
-  optionsSuccessStatus: 200,
-};
-app.use(cors(corsOptions));
+// CORS LIBERADO PARA WEB E MOBILE
+app.use(cors());
 
-app.get('/', (req, res) => {
-  res.send('<h1>API do Torneio Funcionando!</h1><p>Acesse as rotas de Torneios, Usuários, etc.</p>');
+app.get("/", (req, res) => {
+  res.send(
+    "<h1>API do Torneio Funcionando!</h1><p>Acesse as rotas de Torneios, Usuários, etc.</p>"
+  );
 });
 
 app.use(express.json());
