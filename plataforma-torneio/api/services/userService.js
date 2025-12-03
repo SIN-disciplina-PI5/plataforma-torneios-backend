@@ -1,17 +1,20 @@
 import models from "../models/index.js";
-const { Usuario } = models;
+const {  Usuario, Ranking, EquipeUsuario, PartidaUsuario, Partida } = models;
 import jwt from "jsonwebtoken";
 
 export const criarUsuarioService = async (dados) => {
   const { nome, email, senha } = dados;
   if (!nome || !email || !senha) throw new Error("Dados faltando");
 
+  const usuarioExistente = await Usuario.findOne({ where: { email } });
+  if (usuarioExistente) throw new Error("Email já cadastrado");
+
   const novoUsuario = await Usuario.create({
     nome,
     email,
-    senha,
+    senha: senha,
     patente: null,
-    role: "USER",
+    role: "USER"
   });
 
   const token = jwt.sign(
@@ -24,9 +27,25 @@ export const criarUsuarioService = async (dados) => {
   return { novoUsuario: usuarioSeguro, token };
 };
 
+export const getAllUsuariosService = async () => {
+  const usuarios = await Usuario.findAll({
+    attributes: { exclude: ['senha'] }
+  });
+  return usuarios;
+};
+
+export const getUsuarioByIdService = async (id) => {
+  const usuario = await Usuario.findByPk(id, {
+    attributes: { exclude: ['senha'] }
+  });
+  if (!usuario) throw new Error("Usuário não encontrado");
+  return usuario;
+};
+
 export const editarUsuarioService = async (id, dados) => {
   const usuario = await Usuario.findByPk(id);
   if (!usuario) throw new Error("Usuário não encontrado");
+  
   await usuario.update(dados);
   const { senha, ...usuarioSeguro } = usuario.toJSON();
   return usuarioSeguro;
@@ -37,12 +56,12 @@ export const deletarUsuarioService = async (id) => {
   if (!deletado) throw new Error("Usuário não encontrado");
 };
 
-/* continuar e testar quando equipe e equipeusuario estiverem disponiveis (lembrar de importar)
 export const visualizarHistoricoService = async (userId) => {
   const equipes = await EquipeUsuario.findAll({
     where: { id_usuario: userId },
     attributes: ["id_equipe"],
   });
+  
   if (!equipes || equipes.length === 0)
     throw new Error("Usuário não está vinculado a nenhuma equipe.");
 
@@ -79,4 +98,3 @@ export const visualizarRankingService = async () => {
   });
   return { ranking };
 };
-*/

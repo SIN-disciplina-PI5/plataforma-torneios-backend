@@ -1,4 +1,4 @@
-import { criarUsuarioService, editarUsuarioService, deletarUsuarioService, } from "../services/userService.js";
+import { criarUsuarioService, editarUsuarioService, getAllUsuariosService, getUsuarioByIdService, deletarUsuarioService, visualizarHistoricoService, visualizarRankingService } from "../services/userService.js";
 
 export const criarUsuario = async (req, res) => {
   try {
@@ -18,6 +18,24 @@ export const editarPerfil = async (req, res) => {
   }
 };
 
+export const getAllUsuarios = async (req, res) => {
+  try {
+    const usuarios = await getAllUsuariosService();
+    return res.status(200).json({ data: usuarios });
+  } catch (e) {
+    return res.status(500).json({ error: e.message });
+  }
+};
+
+export const getUsuarioById = async (req, res) => {
+  try {
+    const usuario = await getUsuarioByIdService(req.params.id_usuario);
+    return res.status(200).json({ data: usuario });
+  } catch (e) {
+    return res.status(404).json({ error: e.message });
+  }
+};
+
 export const deletarPerfil = async (req, res) => {
   try {
     await deletarUsuarioService(req.params.id_usuario);
@@ -27,10 +45,9 @@ export const deletarPerfil = async (req, res) => {
   }
 };
 
-/*   concluir depois que inserirem equipe e equipeusuario
 export const visualizarHistorico = async (req, res) => {
   try {
-    const historico = await visualizarHistoricoService(req.user.id_usuario);
+    const historico = await visualizarHistoricoService(req.user.id); 
     return res.status(200).json(historico);
   } catch (e) {
     return res.status(500).json({ error: e.message });
@@ -45,4 +62,3 @@ export const visualizarRanking = async (req, res) => {
     return res.status(500).json({ error: e.message });
   }
 };
-*/

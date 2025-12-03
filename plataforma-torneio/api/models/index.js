@@ -6,8 +6,11 @@ import UsuarioModel from "./user.js";
 import TorneioModel from "./torneio.js";
 import BlacklistModel from "./blacklist.js";
 import InscricaoModel from "./inscricao.js";
+import PartidaModel from "./partida.js";
 import getEquipeModel from "./equipe.js";
 import getEquipeUsuarioModel from "./equipeUsuario.js";
+import getRankingModel from "./ranking.js";
+import partidaUsuarioModel from "./partidaUsuario.js"
 
 const sequelize = new Sequelize(process.env.POSTGRES_URL, {
   dialect: "postgres",
@@ -25,7 +28,9 @@ const Inscricao = InscricaoModel(sequelize);
 const Blacklist = BlacklistModel(sequelize, DataTypes);
 const Equipe = getEquipeModel(sequelize, { DataTypes });
 const EquipeUsuario = getEquipeUsuarioModel(sequelize, { DataTypes });
-
+const Ranking = getRankingModel(sequelize, { DataTypes });
+const Partida = PartidaModel(sequelize);
+const PartidaUsuario = partidaUsuarioModel(sequelize, DataTypes); 
 // Relacionamentos
 
 Usuario.belongsToMany(Equipe, {
@@ -63,13 +68,64 @@ Inscricao.belongsTo(Torneio, {
   as: "torneio",
 });
 
-export {
-  sequelize,
+Partida.belongsTo(Torneio, { foreignKey: "id_torneio" });
+Torneio.hasMany(Partida, { foreignKey: "id_torneio" });
+
+
+
+//ranking
+
+Usuario.hasOne(Ranking, {
+  foreignKey: "id_usuario",
+  as: "ranking",
+});
+
+Ranking.belongsTo(Usuario, {
+  foreignKey: "id_usuario",
+  as: "usuario",
+});
+
+// partida
+
+Partida.belongsTo(Torneio, {
+   foreignKey: "id_torneio" 
+  });
+
+  Torneio.hasMany(Partida, {
+     foreignKey: "id_torneio"
+     });
+
+     
+Partida.hasMany(PartidaUsuario, { 
+  foreignKey: "id_partida",
+  as: "equipesPartida" 
+});
+
+PartidaUsuario.belongsTo(Partida, { 
+  foreignKey: "id_partida",
+  as: "partida" 
+});
+
+Equipe.hasMany(PartidaUsuario, { 
+  foreignKey: "id_equipe",
+  as: "partidasEquipe" 
+});
+
+PartidaUsuario.belongsTo(Equipe, { 
+  foreignKey: "id_equipe",
+  as: "equipe" 
+});
+
+export default {
   Usuario,
   Torneio,
-  Blacklist,
   Inscricao,
+  Blacklist,
   Equipe,
   EquipeUsuario,
-};
-export default sequelize;
+  Ranking,
+  Partida,
+  PartidaUsuario
+}
+
+export {sequelize};

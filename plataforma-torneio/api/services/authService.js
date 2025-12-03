@@ -1,13 +1,14 @@
 import models from "../models/index.js";
-const { User, Blacklist } = models;
+const { Usuario, Blacklist } = models;
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 
 export const loginService = async (email, senha) => {
-  const usuario = await User.findOne({ where: { email } });
+  const usuario = await Usuario.findOne({ where: { email } });
   if (!usuario) throw new Error("Usuário ou senha inválidos");
 
   const match = await bcrypt.compare(senha, usuario.senha);
+  
   if (!match) throw new Error("Usuário ou senha inválidos");
 
   const token = jwt.sign(
@@ -15,6 +16,7 @@ export const loginService = async (email, senha) => {
     process.env.MY_SECRET,
     { expiresIn: parseInt(process.env.JWT_EXPIRES_IN) }
   );
+  
   return token;
 };
 
