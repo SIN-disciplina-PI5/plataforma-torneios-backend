@@ -10,7 +10,7 @@ import PartidaModel from "./partida.js";
 import getEquipeModel from "./equipe.js";
 import getEquipeUsuarioModel from "./equipeUsuario.js";
 import getRankingModel from "./ranking.js";
-import partidaUsuarioModel from "./partidaUsuario.js"
+import partidaUsuarioModel from "./partidaUsuario.js";
 
 const sequelize = new Sequelize(process.env.POSTGRES_URL, {
   dialect: "postgres",
@@ -30,7 +30,7 @@ const Equipe = getEquipeModel(sequelize, { DataTypes });
 const EquipeUsuario = getEquipeUsuarioModel(sequelize, { DataTypes });
 const Ranking = getRankingModel(sequelize, { DataTypes });
 const Partida = PartidaModel(sequelize);
-const PartidaUsuario = partidaUsuarioModel(sequelize, DataTypes); 
+const PartidaUsuario = partidaUsuarioModel(sequelize, DataTypes);
 // Relacionamentos
 
 Usuario.belongsToMany(Equipe, {
@@ -61,17 +61,13 @@ Inscricao.belongsTo(Equipe, {
 
 Torneio.hasMany(Inscricao, {
   foreignKey: "id_torneio",
-  as: "inscricoes",
+  onDelete: "CASCADE",
+  onUpdate: "CASCADE",
 });
-Inscricao.belongsTo(Torneio, {
-  foreignKey: "id_torneio",
-  as: "torneio",
-});
+Inscricao.belongsTo(Torneio, { foreignKey: "id_torneio" });
 
 Partida.belongsTo(Torneio, { foreignKey: "id_torneio" });
 Torneio.hasMany(Partida, { foreignKey: "id_torneio" });
-
-
 
 //ranking
 
@@ -88,32 +84,31 @@ Ranking.belongsTo(Usuario, {
 // partida
 
 Partida.belongsTo(Torneio, {
-   foreignKey: "id_torneio" 
-  });
+  foreignKey: "id_torneio",
+});
 
-  Torneio.hasMany(Partida, {
-     foreignKey: "id_torneio"
-     });
+Torneio.hasMany(Partida, {
+  foreignKey: "id_torneio",
+});
 
-     
-Partida.hasMany(PartidaUsuario, { 
+Partida.hasMany(PartidaUsuario, {
   foreignKey: "id_partida",
-  as: "equipesPartida" 
+  as: "equipesPartida",
 });
 
-PartidaUsuario.belongsTo(Partida, { 
+PartidaUsuario.belongsTo(Partida, {
   foreignKey: "id_partida",
-  as: "partida" 
+  as: "partida",
 });
 
-Equipe.hasMany(PartidaUsuario, { 
+Equipe.hasMany(PartidaUsuario, {
   foreignKey: "id_equipe",
-  as: "partidasEquipe" 
+  as: "partidasEquipe",
 });
 
-PartidaUsuario.belongsTo(Equipe, { 
+PartidaUsuario.belongsTo(Equipe, {
   foreignKey: "id_equipe",
-  as: "equipe" 
+  as: "equipe",
 });
 
 export default {
@@ -125,7 +120,7 @@ export default {
   EquipeUsuario,
   Ranking,
   Partida,
-  PartidaUsuario
-}
+  PartidaUsuario,
+};
 
-export {sequelize};
+export { sequelize };
