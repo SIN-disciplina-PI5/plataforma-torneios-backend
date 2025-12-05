@@ -1,71 +1,64 @@
-import bcrypt from "bcrypt";
-import { User } from "../models/User.js";
-import { gerarToken } from "../utils/jwt.js";
+import { criarUsuarioService, editarUsuarioService, getAllUsuariosService, getUsuarioByIdService, deletarUsuarioService, visualizarHistoricoService, visualizarRankingService } from "../services/userService.js";
 
-export const register = async (req, res) => {
+export const criarUsuario = async (req, res) => {
   try {
-    const { name, email, password } = req.body;
-
-    const existe = await User.findOne({ where: { email } });
-
-    if (existe) {
-      return res.status(400).json({ message: "Email já cadastrado" });
-    }
-
-    const senhaHash = await bcrypt.hash(password, 10);
-
-    const novoUsuario = await User.create({
-      name,
-      email,
-      password: senhaHash,
-    });
-
-    const token = gerarToken(novoUsuario);
-
-    return res.status(201).json({
-      message: "Usuário criado com sucesso",
-      token,
-      user: {
-        id: novoUsuario.id,
-        name: novoUsuario.name,
-        email: novoUsuario.email,
-      },
-    });
-  } catch (error) {
-    console.error(error);
-    return res.status(500).json({ message: "Erro ao cadastrar" });
+    const result = await criarUsuarioService(req.body);
+    return res.status(201).json({ message: "Usuário criado", data: result });
+  } catch (e) {
+    return res.status(400).json({ error: e.message });
   }
 };
 
-export const login = async (req, res) => {
+export const editarPerfil = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const usuario = await editarUsuarioService(req.params.id_usuario, req.body);
+    return res.status(200).json(usuario);
+  } catch (e) {
+    return res.status(400).json({ error: e.message });
+  }
+};
 
-    const usuario = await User.findOne({ where: { email } });
+export const getAllUsuarios = async (req, res) => {
+  try {
+    const usuarios = await getAllUsuariosService();
+    return res.status(200).json({ data: usuarios });
+  } catch (e) {
+    return res.status(500).json({ error: e.message });
+  }
+};
 
-    if (!usuario) {
-      return res.status(400).json({ message: "Email não encontrado" });
-    }
+export const getUsuarioById = async (req, res) => {
+  try {
+    const usuario = await getUsuarioByIdService(req.params.id_usuario);
+    return res.status(200).json({ data: usuario });
+  } catch (e) {
+    return res.status(404).json({ error: e.message });
+  }
+};
 
-    const senhaCorreta = await bcrypt.compare(password, usuario.password);
+export const deletarPerfil = async (req, res) => {
+  try {
+    await deletarUsuarioService(req.params.id_usuario);
+    return res.status(204).send();
+  } catch (e) {
+    return res.status(400).json({ error: e.message });
+  }
+};
 
-    if (!senhaCorreta) {
-      return res.status(400).json({ message: "Senha incorreta" });
-    }
+export const visualizarHistorico = async (req, res) => {
+  try {
+    const historico = await visualizarHistoricoService(req.user.id); 
+    return res.status(200).json(historico);
+  } catch (e) {
+    return res.status(500).json({ error: e.message });
+  }
+};
 
-    const token = gerarToken(usuario);
-
-    return res.status(200).json({
-      message: "Login realizado",
-      token,
-      user: {
-        id: usuario.id,
-        name: usuario.name,
-        email: usuario.email,
-      },
-    });
-  } catch (error) {
-    console.error(error);
-    return res.status(500).json({ message: "Erro ao fazer login" });
+export const visualizarRanking = async (req, res) => {
+  try {
+    const ranking = await visualizarRankingService();
+    return res.status(200).json(ranking);
+  } catch (e) {
+    return res.status(500).json({ error: e.message });
   }
 };
