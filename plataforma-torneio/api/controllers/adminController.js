@@ -2,6 +2,7 @@ import {
   createAdminService,
   updateAdminService,
   deleteAdminService,
+  getAdminByIdService,
 } from "../services/adminService.js";
 import { loginService } from "../services/authService.js";
 import jwt from "jsonwebtoken";
@@ -57,6 +58,21 @@ export const deleteAdmin = async (req, res) => {
     const { id_usuario } = req.params;
     await deleteAdminService(id_usuario);
     return res.status(204).send();
+  } catch (e) {
+    return res.status(400).json({ error: e.message });
+  }
+};
+
+export const getAdminMe = async (req, res) => {
+  try {
+    const id_usuario = req.usuario.id;
+
+    const admin = await getAdminByIdService(id_usuario);
+
+    return res.status(200).json({
+      message: "Admin carregado com sucesso",
+      data: admin,
+    });
   } catch (e) {
     return res.status(400).json({ error: e.message });
   }

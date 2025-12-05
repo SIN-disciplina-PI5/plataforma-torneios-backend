@@ -72,3 +72,19 @@ export const deleteAdminService = async (id) => {
   await admin.destroy();
   return { message: "Administrador deletado com sucesso." };
 };
+
+export const getAdminByIdService = async (id_usuario) => {
+  const admin = await Usuario.findByPk(id_usuario);
+
+  if (!admin) {
+    throw new Error("Administrador não encontrado.");
+  }
+
+  return {
+    id_usuario: admin.id_usuario,
+    nome: admin.nome,
+    email: admin.email,
+    role: admin.role,
+    patente: admin.patente,
+  };
+};
