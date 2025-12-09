@@ -15,7 +15,7 @@ import partidaUsuarioModel from "./partidaUsuario.js";
 const sequelize = new Sequelize(process.env.POSTGRES_URL, {
   dialect: "postgres",
   protocol: "postgres",
-  dialectOptions: {
+  dialectOptions: process.env.NODE_ENV === 'test' ? {} : {
     ssl: { require: true, rejectUnauthorized: false },
   },
   dialectModule: pg,

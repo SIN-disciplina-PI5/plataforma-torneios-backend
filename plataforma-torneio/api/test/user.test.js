@@ -1,7 +1,6 @@
 import request from "supertest";
 import app from "../index.js";
-import models from "../models/index.js";
-const { sequelize } = models;
+import models, { sequelize } from "../models/index.js";
 
 let token;
 let userId;
@@ -27,9 +26,9 @@ describe("Rotas de usuário", () => {
             .post("/api/users/signup")
             .send(user)
             .expect(201);
-        expect(res.body.data.newUser.email).toBe(user.email);
+        expect(res.body.data.novoUsuario.email).toBe(user.email);
         token = res.body.data.token;
-        userId = res.body.data.newUser.id_usuario;
+        userId = res.body.data.novoUsuario.id_usuario;
     });
 
     test("POST /api/users/login - deve logar e retornar token", async () => {

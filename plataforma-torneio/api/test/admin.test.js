@@ -1,7 +1,6 @@
 import request from "supertest";
 import app from "../index.js";
-import models from "../models/index.js";
-const { sequelize } = models;
+import models, { sequelize } from "../models/index.js";
 
 let token;
 let adminId;
@@ -19,6 +18,7 @@ describe("Rotas de Admin (Ciclo Completo)", () => {
     nome: "Admin Teste",
     email: "admin@teste.com",
     senha: "123456",
+    secretKey: process.env.ADMIN_SECRET_KEY,
   };
 
   // 1. TESTE DE CRIAÇÃO
