@@ -1,7 +1,7 @@
 export default (sequelize, DataTypes) => {
   return sequelize.define("Blacklist", {
     token: {
-      type: DataTypes.STRING,
+      type: DataTypes.TEXT,
       allowNull: false,
       unique: true,
     },
