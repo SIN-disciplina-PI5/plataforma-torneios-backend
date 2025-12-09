@@ -1,11 +1,13 @@
 import "dotenv/config";
 import cors from "cors";
 import express from "express";
-import * as models from "./models/index.js";
+import * as models from "./models/index.js";  // Importação corrigida
 import routes from "./routes/index.js";
 
 const app = express();
-app.set("trust proxy", true);
+if (process.env.NODE_ENV !== 'test') {
+  app.set('trust proxy', true);
+}
 
 // CORS LIBERADO PARA WEB E MOBILE
 app.use(cors());

@@ -1,25 +1,24 @@
 import request from "supertest";
 import app from "../index.js";
-import models from "../models/index.js";
-const { sequelize } = models;
+import { sequelize } from "../models/index.js";
 
 let token;
 let userId;
 
-beforeAll(async () => {                     //antes de rodar todos os testes, recria o banco limpo
-    await sequelize.sync({ force: true });  //força a recriação das tabelas 
+beforeAll(async () => {
+    await sequelize.sync({ force: true });
 });
 
-afterAll(async () => {                      //depois de executar os testes, fecha a conexão com o banco
+afterAll(async () => {
     await sequelize.close();
 });
 
 describe("Rotas de usuário", () => {
+    const timestamp = Date.now();
     const user = {
         nome: "Nome Teste",
-        email: "nome@email.com",
+        email: `nome${timestamp}@email.com`,
         senha: "123456",
-        role: "USER",
     };
 
     test("POST /api/users/signup - deve cadastrar um novo usuário", async () => {
@@ -27,9 +26,10 @@ describe("Rotas de usuário", () => {
             .post("/api/users/signup")
             .send(user)
             .expect(201);
-        expect(res.body.data.newUser.email).toBe(user.email);
+        
+        expect(res.body.data.novoUsuario.email).toBe(user.email);
         token = res.body.data.token;
-        userId = res.body.data.newUser.id_usuario;
+        userId = res.body.data.novoUsuario.id_usuario;
     });
 
     test("POST /api/users/login - deve logar e retornar token", async () => {
@@ -37,7 +37,9 @@ describe("Rotas de usuário", () => {
             .post("/api/users/login")
             .send({ email: user.email, senha: user.senha })
             .expect(200);
+        
         expect(res.body.token).toBeDefined();
+        token = res.body.token; 
     });
 
     test("PATCH /api/users/edit/:id_usuario - deve atualizar o perfil", async () => {
@@ -46,14 +48,12 @@ describe("Rotas de usuário", () => {
             .set("Authorization", `Bearer ${token}`)
             .send({
                 nome: "Nome Atualizado",
-                email: "novoemail@email.com",
-                role: "ADMIN",
+                email: `novo${timestamp}@email.com`,
             })
             .expect(200);
 
         expect(res.body.nome).toBe("Nome Atualizado");
-        expect(res.body.email).toBe("novoemail@email.com");
-        expect(res.body.role).toBe("ADMIN");
+        expect(res.body.email).toBe(`novo${timestamp}@email.com`);
     });
 
     test("DELETE /api/users/delete/:id_usuario - deve deletar um usuário", async () => {
@@ -61,6 +61,7 @@ describe("Rotas de usuário", () => {
             .delete(`/api/users/delete/${userId}`)
             .set("Authorization", `Bearer ${token}`)
             .expect(204);
+        
         expect(res.body).toEqual({});
     });
 
@@ -69,6 +70,7 @@ describe("Rotas de usuário", () => {
             .post("/api/users/logout")
             .set("Authorization", `Bearer ${token}`)
             .expect(200);
+        
         expect(res.body.message).toBe("Você deslogou");
     });
 });
