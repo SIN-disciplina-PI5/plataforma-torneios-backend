@@ -1,22 +1,23 @@
 # Plataforma Torneios Backend
 
 ## 📖 Visão geral  
-O *Plataforma Torneios Backend* é a API/servidor responsável por gerenciar torneios, participantes, resultados e toda a lógica de backend da aplicação de torneios. Ele fornece endpoints para criação, listagem, edição e deleção de torneios e participantes, bem como controle de autenticação/autorização, persistência de dados e regras de negócio associadas.
+O *Arena Lagoa Beach Backend* é a API responsável por gerenciar torneios, participantes, resultados e toda a lógica de backend da aplicação de torneios. Ele fornece endpoints para criação, listagem, edição e deleção de torneios e participantes, bem como controle de autenticação/autorização, persistência de dados e regras de negócio associadas.
 
 Este backend foi desenvolvido como parte da disciplina PI5 do curso de Sistemas para Internet da UNICAP, com foco em boas práticas de organização de código, modularidade e colaboração em equipe.
 
 ## 📂 Funcionalidades principais  
 - Gestão de torneios (criar, editar, remover, listar)  
 - Gerenciamento de participantes / times / usuários  
-- Registro e atualização de resultados de jogos/partidas  
-- Autenticação e autorização (login, tokens/sessões — se aplicável)  
-- APIs REST para consumo por frontend ou outro cliente  
+- Registro e atualização de resultados de partidas  
+- Autenticação e autorização (login, tokens/sessões)  
+- APIs REST para consumo por frontend
 - Validações e regras de negócio para consistência de dados  
 
 ## 🚀 Tecnologias utilizadas  
-- Linguagem: JavaScript / Node.js (ou conforme visto no repositório)  
-- Framework / bibliotecas: (ex: Express, Sequelize / TypeORM / Mongoose — ajustar conforme seu stack)  
-- Banco de dados: (ex: PostgreSQL, MongoDB — ajustar conforme uso)  
+- Linguagem: JavaScript / Node.js  
+- Framework / bibliotecas: (ex: Express, Sequelize, jsonwebtoken, Bcrypt)  
+- Banco de dados: (ex: PostgreSQL)  
+- Testes: Jest, Supertest
 - Versionamento com Git / GitHub
 
 ## Desenvolvedores
