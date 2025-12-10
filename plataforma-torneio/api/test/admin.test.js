@@ -19,7 +19,7 @@ describe("Rotas de Admin (Ciclo Completo)", () => {
         nome: "Admin Teste",
         email: `admin${timestamp}@teste.com`,
         senha: "123456",
-        secretKey: "AdmSupremo",
+        secretKey: process.env.ADMIN_SECRET_KEY,
     };
 
     test("POST /api/admin/register - deve cadastrar admin", async () => {

@@ -5,9 +5,9 @@
   "main": "index.js",
   "scripts": {
     "start": "nodemon --exec babel-node api/index.js",
-    "test": "NODE_ENV=test jest --runInBand --detectOpenHandles",
-    "test:coverage": "NODE_ENV=test jest --coverage --runInBand --detectOpenHandles"
-    },
+    "test": "jest --runInBand --detectOpenHandles",
+    "test:coverage": "jest --coverage --runInBand --detectOpenHandles"
+  },
   "keywords": [],
   "author": "Equipe 2",
   "license": "MIT",
