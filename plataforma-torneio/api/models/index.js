@@ -43,6 +43,8 @@ Usuario.belongsToMany(Equipe, {
   foreignKey: "id_usuario",
   otherKey: "id_equipe",
   as: "equipes",
+  onDelete: "CASCADE",
+  onUpdate: "CASCADE",
 });
 
 Equipe.belongsToMany(Usuario, {
@@ -50,16 +52,22 @@ Equipe.belongsToMany(Usuario, {
   foreignKey: "id_equipe",
   otherKey: "id_usuario",
   as: "membros",
+  onDelete: "CASCADE",
+  onUpdate: "CASCADE",
 });
 
 Equipe.hasMany(Inscricao, {
   foreignKey: "id_equipe",
   as: "inscricoes",
+  onDelete: "CASCADE",
+  onUpdate: "CASCADE",
 });
 
 Inscricao.belongsTo(Equipe, {
   foreignKey: "id_equipe",
   as: "equipe",
+  onDelete: "CASCADE",
+  onUpdate: "CASCADE",
 });
 
 Torneio.hasMany(Inscricao, {
@@ -70,44 +78,62 @@ Torneio.hasMany(Inscricao, {
 
 Inscricao.belongsTo(Torneio, {
   foreignKey: "id_torneio",
+  onDelete: "CASCADE",
+  onUpdate: "CASCADE",
 });
 
 Usuario.hasOne(Ranking, {
   foreignKey: "id_usuario",
   as: "ranking",
+  onDelete: "CASCADE",
+  onUpdate: "CASCADE",
 });
 
 Ranking.belongsTo(Usuario, {
   foreignKey: "id_usuario",
   as: "usuario",
-});
-
-Partida.belongsTo(Torneio, {
-  foreignKey: "id_torneio",
+  onDelete: "CASCADE",
+  onUpdate: "CASCADE",
 });
 
 Torneio.hasMany(Partida, {
   foreignKey: "id_torneio",
+  onDelete: "CASCADE",
+  onUpdate: "CASCADE",
+});
+
+Partida.belongsTo(Torneio, {
+  foreignKey: "id_torneio",
+  onDelete: "CASCADE",
+  onUpdate: "CASCADE",
 });
 
 Partida.hasMany(PartidaUsuario, {
   foreignKey: "id_partida",
   as: "equipesPartida",
+  onDelete: "CASCADE",
+  onUpdate: "CASCADE",
 });
 
 PartidaUsuario.belongsTo(Partida, {
   foreignKey: "id_partida",
   as: "partida",
+  onDelete: "CASCADE",
+  onUpdate: "CASCADE",
 });
 
 Equipe.hasMany(PartidaUsuario, {
   foreignKey: "id_equipe",
   as: "partidasEquipe",
+  onDelete: "CASCADE",
+  onUpdate: "CASCADE",
 });
 
 PartidaUsuario.belongsTo(Equipe, {
   foreignKey: "id_equipe",
   as: "equipe",
+  onDelete: "CASCADE",
+  onUpdate: "CASCADE",
 });
 
 export default {
