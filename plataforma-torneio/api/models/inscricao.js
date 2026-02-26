@@ -1,9 +1,7 @@
 import { DataTypes } from "sequelize";
 
 export default (sequelize) => {
-  const Inscricao = sequelize.define(
-    "Inscricao",
-    {
+  return sequelize.define("Inscricao", {
       id_inscricao: {
         type: DataTypes.UUID,
         defaultValue: DataTypes.UUIDV4,
@@ -12,6 +10,10 @@ export default (sequelize) => {
       id_equipe: {
         type: DataTypes.UUID,
         allowNull: false,
+        references: {
+          model: "Equipes",
+          key: "id_equipe",
+        },
         onUpdate: "CASCADE",
         onDelete: "CASCADE",
       },
@@ -37,10 +39,7 @@ export default (sequelize) => {
       },
     },
     {
-      tableName: "inscricao", // força o nome da tabela em minúsculo
-      freezeTableName: true, // evita pluralização automática
+      tableName: "Inscricoes",
     }
   );
-
-  return Inscricao;
 };

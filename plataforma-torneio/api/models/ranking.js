@@ -1,9 +1,7 @@
+import { DataTypes } from "sequelize";
+
 export default (sequelize) => {
-  const { DataTypes } = sequelize.Sequelize;
-  
-  const Ranking = sequelize.define(
-    "Ranking",
-    {
+  return sequelize.define("Ranking", {
       id_ranking: {
         type: DataTypes.UUID,
         defaultValue: DataTypes.UUIDV4,
@@ -13,9 +11,9 @@ export default (sequelize) => {
         type: DataTypes.UUID,
         allowNull: false,
         references: {
-          model: 'Usuarios',
-          key: 'id_usuario'
-        }
+          model: "Usuarios",
+          key: "id_usuario",
+        },
       },
       pontos_acumulados: {
         type: DataTypes.INTEGER,
@@ -31,21 +29,9 @@ export default (sequelize) => {
         allowNull: false,
         defaultValue: DataTypes.NOW,
       },
-      createdAt: {
-        type: DataTypes.DATE,
-        allowNull: false,
-        defaultValue: DataTypes.NOW,
-      },
-      updatedAt: {
-        type: DataTypes.DATE,
-        allowNull: false,
-        defaultValue: DataTypes.NOW,
-      },
     },
     {
       tableName: "Rankings",
     }
   );
-
-  return Ranking;
 };
