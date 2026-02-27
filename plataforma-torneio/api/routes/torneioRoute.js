@@ -1,20 +1,20 @@
 import { Router } from "express";
 import {
-  criarTorneio,
-  listarTorneios,
-  buscarTorneio,
-  atualizarTorneio,
-  deletarTorneio,
+  createTorneio,
+  getAllTorneios,
+  getTorneioById,
+  updateTorneio,
+  deleteTorneio,
 } from "../controllers/torneioController.js";
 import { authenticateToken } from "../middlewares/authenticateToken.js";
 import checkAdmin from "../middlewares/checkAdmin.js";
 
 const router = Router();
 
-router.post("/", authenticateToken, checkAdmin, criarTorneio);
-router.get("/", authenticateToken, listarTorneios);
-router.get("/:id_torneio", authenticateToken, buscarTorneio);
-router.patch("/:id_torneio", authenticateToken, checkAdmin, atualizarTorneio);
-router.delete("/:id_torneio", authenticateToken, checkAdmin, deletarTorneio);
+router.post("/", authenticateToken, checkAdmin, createTorneio);
+router.get("/", authenticateToken, getAllTorneios);
+router.get("/:id_torneio", authenticateToken, getTorneioById);
+router.patch("/:id_torneio", authenticateToken, checkAdmin, updateTorneio);
+router.delete("/:id_torneio", authenticateToken, checkAdmin, deleteTorneio);
 
 export default router;

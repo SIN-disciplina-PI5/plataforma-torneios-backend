@@ -3,24 +3,21 @@ import { authenticateToken } from "../middlewares/authenticateToken.js";
 import { rateLimiter } from "../middlewares/rateLimiter.js";
 import checkAdmin from "../middlewares/checkAdmin.js";
 import {
-  criarPartidaUsuario,
-  buscarPartidaUsuario,
-  listarPartidasUsuario,
-  editarPartidaUsuario,
-  deletarPartidaUsuario,
-  vincularJogador,
-  definirResultado
+  createPartidaUsuario,
+  getPartidaUsuarioById,
+  getAllPartidasUsuario,
+  updatePartidaUsuario,
+  deletePartidaUsuario,
+  definirStatusIndividual,
 } from "../controllers/partidaUsuarioController.js";
 
 const router = Router();
 
-router.post("/", authenticateToken, checkAdmin, rateLimiter, criarPartidaUsuario);
-router.get("/", authenticateToken, listarPartidasUsuario);
-router.get("/:id_partida_usuario", authenticateToken, buscarPartidaUsuario);
-router.patch("/edit/:id_partida_usuario", authenticateToken, checkAdmin, rateLimiter, editarPartidaUsuario);
-router.delete("/delete/:id_partida_usuario", authenticateToken, checkAdmin, rateLimiter, deletarPartidaUsuario);
-
-router.post("/vincular/:id_partida", authenticateToken, checkAdmin, rateLimiter, vincularJogador);
-router.patch("/resultado/:id_partida_usuario", authenticateToken, checkAdmin, rateLimiter, definirResultado);
+router.post("/", authenticateToken, checkAdmin, rateLimiter, createPartidaUsuario);
+router.get("/", authenticateToken, getAllPartidasUsuario);
+router.get("/:id_partida_usuario", authenticateToken, getPartidaUsuarioById);
+router.patch("/:id_partida_usuario", authenticateToken, checkAdmin, rateLimiter, updatePartidaUsuario);
+router.delete("/:id_partida_usuario", authenticateToken, checkAdmin, rateLimiter, deletePartidaUsuario);
+router.patch("/status/:id_partida_usuario", authenticateToken, checkAdmin, rateLimiter, definirStatusIndividual);
 
 export default router;
