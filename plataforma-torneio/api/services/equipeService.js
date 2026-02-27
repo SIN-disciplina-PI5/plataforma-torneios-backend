@@ -1,56 +1,58 @@
 import models from "../models/index.js";
+const { Equipe } = models;
 
-const equipeService = {
-  create: async (data) => {
-    try {
-      const novaEquipe = await models.Equipe.create(data);
-      return novaEquipe;
-    } catch (error) {
-      throw new Error(`Erro ao criar equipe: ${error.message}`);
-    }
-  },
+export const createEquipeService = async (data) => {
+  const { nome } = data;
+  if (!nome) throw new Error("Nome da equipe é obrigatório");
 
-  getAll: async () => {
-    try {
-      return await models.Equipe.findAll();
-    } catch (error) {
-      throw new Error(`Erro ao buscar equipes: ${error.message}`);
-    }
-  },
+  const equipeExistente = await Equipe.findOne({ where: { nome } });
+  if (equipeExistente) throw new Error("Já existe uma equipe com este nome");
 
-  getById: async (id) => {
-    try {
-      const equipe = await models.Equipe.findByPk(id);
-      if (!equipe) throw new Error("Equipe não encontrada");
-      return equipe;
-    } catch (error) {
-      throw new Error(error.message);
-    }
-  },
-
-  update: async (id, data) => {
-    try {
-      const equipe = await models.Equipe.findByPk(id);
-      if (!equipe) throw new Error("Equipe não encontrada para atualização");
-
-      await equipe.update(data);
-      return equipe;
-    } catch (error) {
-      throw new Error(error.message);
-    }
-  },
-
-  delete: async (id) => {
-    try {
-      const equipe = await models.Equipe.findByPk(id);
-      if (!equipe) throw new Error("Equipe não encontrada para exclusão");
-
-      await equipe.destroy();
-      return { message: "Equipe deletada com sucesso" };
-    } catch (error) {
-      throw new Error(error.message);
-    }
-  },
+  const novaEquipe = await Equipe.create({ nome });
+  return {
+    id_equipe: novaEquipe.id_equipe,
+    nome: novaEquipe.nome,
+  };
 };
 
-export default equipeService;
+export const getAllEquipesService = async () => {
+  const equipes = await Equipe.findAll({
+    order: [["nome", "ASC"]]
+  });
+  return equipes.map(e => ({
+    id_equipe: e.id_equipe,
+    nome: e.nome,
+  }));
+};
+
+export const getEquipeByIdService = async (id) => {
+  const equipe = await Equipe.findByPk(id);
+  if (!equipe) throw new Error("Equipe não encontrada");
+  return {
+    id_equipe: equipe.id_equipe,
+    nome: equipe.nome,
+  };
+};
+
+export const updateEquipeService = async (id, data) => {
+  const equipe = await Equipe.findByPk(id);
+  if (!equipe) throw new Error("Equipe não encontrada");
+
+  if (data.nome && data.nome !== equipe.nome) {
+    const equipeExistente = await Equipe.findOne({ where: { nome: data.nome } });
+    if (equipeExistente) throw new Error("Já existe uma equipe com este nome");
+  }
+
+  await equipe.update(data);
+  return {
+    id_equipe: equipe.id_equipe,
+    nome: equipe.nome,
+  };
+};
+
+export const deleteEquipeService = async (id) => {
+  const equipe = await Equipe.findByPk(id);
+  if (!equipe) throw new Error("Equipe não encontrada");
+  await equipe.destroy();
+  return { message: "Equipe deletada com sucesso" };
+};
