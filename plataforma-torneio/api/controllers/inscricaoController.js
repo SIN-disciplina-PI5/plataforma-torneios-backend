@@ -1,4 +1,3 @@
-import "dotenv/config.js";
 import {
   createInscricaoService,
   getAllInscricoesService,
@@ -10,18 +9,10 @@ import {
 export const createInscricao = async (req, res) => {
   try {
     const { id_equipe, id_torneio } = req.body;
-
     if (!id_equipe || !id_torneio) {
-      return res.status(400).json({
-        error: "id_equipe e id_torneio são obrigatórios",
-      });
+      return res.status(400).json({ error: "id_equipe e id_torneio são obrigatórios" });
     }
-
-    const newInscricao = await createInscricaoService({
-      id_equipe,
-      id_torneio,
-    });
-
+    const newInscricao = await createInscricaoService({ id_equipe, id_torneio });
     return res.status(201).json({
       message: "Inscrição criada com sucesso",
       data: newInscricao,
@@ -52,17 +43,11 @@ export const getInscricaoById = async (req, res) => {
 export const updateInscricao = async (req, res) => {
   try {
     const { status } = req.body;
-
     const allowedStatus = ["AGUARDANDO", "APROVADA", "REJEITADA"];
-
     if (status && !allowedStatus.includes(status)) {
       return res.status(400).json({ error: "Status inválido" });
     }
-
-    const inscricaoAtualizada = await updateInscricaoService(req.params.id, {
-      status,
-    });
-
+    const inscricaoAtualizada = await updateInscricaoService(req.params.id, { status });
     return res.status(200).json({
       message: "Inscrição atualizada com sucesso",
       data: inscricaoAtualizada,

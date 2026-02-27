@@ -22,10 +22,7 @@ export const registerAdmin = async (req, res) => {
 export const loginAdmin = async (req, res) => {
   try {
     const token = await loginService(req.body.email, req.body.senha);
-
-    // Decodifica o token para pegar os dados do usuário
     const decoded = jwt.decode(token);
-
     return res.status(200).json({
       message: "Login realizado com sucesso",
       token,
@@ -66,9 +63,7 @@ export const deleteAdmin = async (req, res) => {
 export const getAdminMe = async (req, res) => {
   try {
     const id_usuario = req.usuario.id;
-
     const admin = await getAdminByIdService(id_usuario);
-
     return res.status(200).json({
       message: "Admin carregado com sucesso",
       data: admin,
