@@ -33,18 +33,26 @@ export default (sequelize) => {
       allowNull: false,
       validate: { notEmpty: true },
     },
+    reset_password_token: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    reset_password_expires: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
   });
-Usuario.beforeCreate(async (usuario) => {
-  usuario.senha = await bcrypt.hash(usuario.senha, 12);
-  if (!usuario.role) {
-    usuario.role = "USER";
-  }
-});
-
-Usuario.beforeUpdate(async (usuario) => {
-  if (usuario.changed('senha')) {
+  Usuario.beforeCreate(async (usuario) => {
     usuario.senha = await bcrypt.hash(usuario.senha, 12);
-  }
-});
+    if (!usuario.role) {
+      usuario.role = "USER";
+    }
+  });
+
+  Usuario.beforeUpdate(async (usuario) => {
+    if (usuario.changed('senha')) {
+      usuario.senha = await bcrypt.hash(usuario.senha, 12);
+    }
+  });
   return Usuario;
 };
