@@ -8,13 +8,15 @@ export const validarRecaptcha = async (token) => {
     null,
     {
       params: {
-        secret: process.env.RECAPTCHA_SECRET,
-        response: token
-      }
+        secret: process.env.RECAPTCHA_SECRET_KEY,
+        response: token,
+      },
     }
   );
 
   if (!response.data.success) {
     throw new Error("Falha no recaptcha");
   }
+
+  return true;
 };
