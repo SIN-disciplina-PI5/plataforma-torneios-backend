@@ -17,6 +17,7 @@
     "@babel/core": "^7.28.4",
     "@babel/node": "^7.28.0",
     "@babel/preset-env": "^7.28.3",
+    "axios": "^1.15.0",
     "bcrypt": "^6.0.0",
     "cors": "^2.8.5",
     "curl": "^0.1.4",

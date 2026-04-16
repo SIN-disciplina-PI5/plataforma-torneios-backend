@@ -6,9 +6,13 @@ import {
   deleteUsuarioService,
 } from "../services/userService.js";
 
+import { validarRecaptcha } from "../utils/recaptcha.js";
+
 export const createUsuario = async (req, res) => {
   try {
-    const result = await createUsuarioService(req.body);
+    const { recaptchaToken, ...dados } = req.body;
+    await validarRecaptcha(recaptchaToken);
+    const result = await createUsuarioService(dados);
     return res.status(201).json({
       message: "Usuário criado",
       data: result,
@@ -56,5 +60,3 @@ export const deleteUsuario = async (req, res) => {
     return res.status(400).json({ error: e.message });
   }
 };
-
-
