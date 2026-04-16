@@ -11,14 +11,21 @@ import { validarRecaptcha } from "../utils/recaptcha.js";
 export const createUsuario = async (req, res) => {
   try {
     const { recaptchaToken, ...dados } = req.body;
+
+    if (!recaptchaToken) {
+      return res.status(400).json({ error: "Recaptcha obrigatório" });
+    }
+
     await validarRecaptcha(recaptchaToken);
+
     const result = await createUsuarioService(dados);
+
     return res.status(201).json({
       message: "Usuário criado",
       data: result,
     });
   } catch (e) {
-    return res.status(400).json({ error: e.message });
+    return res.status(403).json({ error: e.message });
   }
 };
 
