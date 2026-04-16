@@ -4,8 +4,6 @@ import {
   getUsuarioByIdService,
   updateUsuarioService,
   deleteUsuarioService,
-  getHistoricoUsuarioService,
-  getPerfilCompletoService,
 } from "../services/userService.js";
 
 export const createUsuario = async (req, res) => {
@@ -56,24 +54,6 @@ export const deleteUsuario = async (req, res) => {
     return res.status(204).send();
   } catch (e) {
     return res.status(400).json({ error: e.message });
-  }
-};
-
-export const getHistoricoUsuario = async (req, res) => {
-  try {
-    const historico = await getHistoricoUsuarioService(req.user.id);
-    return res.status(200).json({ data: historico });
-  } catch (e) {
-    return res.status(500).json({ error: e.message });
-  }
-};
-
-export const getPerfilCompleto = async (req, res) => {
-  try {
-    const perfil = await getPerfilCompletoService(req.user.id);
-    return res.status(200).json({ data: perfil });
-  } catch (e) {
-    return res.status(500).json({ error: e.message });
   }
 };
 

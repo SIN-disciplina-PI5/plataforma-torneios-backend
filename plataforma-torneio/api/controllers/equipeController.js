@@ -4,58 +4,83 @@ import {
   getEquipeByIdService,
   updateEquipeService,
   deleteEquipeService,
+  entrarNaEquipeService,
+  sairDaEquipeService
 } from "../services/equipeService.js";
 
 export const createEquipe = async (req, res) => {
   try {
-    const equipe = await createEquipeService(req.body);
-    return res.status(201).json({
-      message: "Equipe criada com sucesso!",
-      data: equipe,
-    });
+    const { id_torneio } = req.params;
+    const { id_usuario, nome } = req.body;
+
+    const equipe = await createEquipeService(id_torneio, id_usuario, nome);
+
+    res.status(201).json(equipe);
   } catch (error) {
-    return res.status(400).json({ error: error.message });
+    res.status(400).json({ error: error.message });
+  }
+};
+
+export const entrarNaEquipe = async (req, res) => {
+  try {
+    const { id_torneio } = req.params;
+    const { id_usuario, id_equipe } = req.body;
+
+    const result = await entrarNaEquipeService(id_torneio, id_usuario, id_equipe);
+
+    res.status(200).json(result);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+};
+
+export const sairDaEquipe = async (req, res) => {
+  try {
+    const { id_torneio } = req.params;
+    const { id_usuario } = req.body;
+
+    const result = await sairDaEquipeService(id_torneio, id_usuario);
+
+    res.status(200).json(result);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
   }
 };
 
 export const getAllEquipes = async (req, res) => {
   try {
-    const equipes = await getAllEquipesService();
-    return res.status(200).json({
-      results: equipes.length,
-      data: equipes,
-    });
+    const { id_torneio } = req.query;
+    const equipes = await getAllEquipesService(id_torneio);
+
+    res.status(200).json(equipes);
   } catch (error) {
-    return res.status(400).json({ error: error.message });
+    res.status(500).json({ error: error.message });
   }
 };
 
 export const getEquipeById = async (req, res) => {
   try {
     const equipe = await getEquipeByIdService(req.params.id);
-    return res.status(200).json({ data: equipe });
+    res.status(200).json(equipe);
   } catch (error) {
-    return res.status(404).json({ error: error.message });
+    res.status(404).json({ error: error.message });
   }
 };
 
 export const updateEquipe = async (req, res) => {
   try {
     const equipe = await updateEquipeService(req.params.id, req.body);
-    return res.status(200).json({
-      message: "Equipe atualizada com sucesso!",
-      data: equipe,
-    });
+    res.status(200).json(equipe);
   } catch (error) {
-    return res.status(400).json({ error: error.message });
+    res.status(400).json({ error: error.message });
   }
 };
 
 export const deleteEquipe = async (req, res) => {
   try {
     await deleteEquipeService(req.params.id);
-    return res.status(204).send();
+    res.status(204).send();
   } catch (error) {
-    return res.status(400).json({ error: error.message });
+    res.status(400).json({ error: error.message });
   }
 };

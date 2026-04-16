@@ -36,8 +36,6 @@ const Ranking = RankingModel(sequelize);
 const Partida = PartidaModel(sequelize);
 const PartidaUsuario = PartidaUsuarioModel(sequelize);
 
-/* RELACIONAMENTOS */
-
 Usuario.belongsToMany(Equipe, {
   through: EquipeUsuario,
   foreignKey: "id_usuario",
@@ -56,29 +54,59 @@ Equipe.belongsToMany(Usuario, {
   onUpdate: "CASCADE",
 });
 
-Equipe.hasMany(Inscricao, {
-  foreignKey: "id_equipe",
+Usuario.hasMany(Inscricao, {
+  foreignKey: "id_usuario",
   as: "inscricoes",
   onDelete: "CASCADE",
   onUpdate: "CASCADE",
 });
 
-Inscricao.belongsTo(Equipe, {
-  foreignKey: "id_equipe",
-  as: "equipe",
+Inscricao.belongsTo(Usuario, {
+  foreignKey: "id_usuario",
+  as: "usuario",
   onDelete: "CASCADE",
   onUpdate: "CASCADE",
 });
 
 Torneio.hasMany(Inscricao, {
   foreignKey: "id_torneio",
+  as: "inscricoes",
   onDelete: "CASCADE",
   onUpdate: "CASCADE",
 });
 
 Inscricao.belongsTo(Torneio, {
   foreignKey: "id_torneio",
+  as: "torneio",
   onDelete: "CASCADE",
+  onUpdate: "CASCADE",
+});
+
+Torneio.hasMany(Equipe, {
+  foreignKey: "id_torneio",
+  as: "equipes",
+  onDelete: "CASCADE",
+  onUpdate: "CASCADE",
+});
+
+Equipe.belongsTo(Torneio, {
+  foreignKey: "id_torneio",
+  as: "torneio",
+  onDelete: "CASCADE",
+  onUpdate: "CASCADE",
+});
+
+Equipe.hasMany(Inscricao, {
+  foreignKey: "id_equipe",
+  as: "inscricoes_equipe",
+  onDelete: "SET NULL",
+  onUpdate: "CASCADE",
+});
+
+Inscricao.belongsTo(Equipe, {
+  foreignKey: "id_equipe",
+  as: "equipe_dupla",
+  onDelete: "SET NULL",
   onUpdate: "CASCADE",
 });
 

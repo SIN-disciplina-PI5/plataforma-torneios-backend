@@ -8,21 +8,17 @@ import {
   getUsuarioById,
   updateUsuario,
   deleteUsuario,
-  getHistoricoUsuario,
-  getPerfilCompleto,
 } from "../controllers/userController.js";
+import checkAdmin from "../middlewares/checkAdmin.js";
 
 const router = Router();
 
 router.post("/login", rateLimiter, login);
 router.post("/signup", rateLimiter, createUsuario);
-
-router.get("/historico", authenticateToken, getHistoricoUsuario);
-router.get("/perfil", authenticateToken, getPerfilCompleto); // nova rota para perfil completo
 router.get("/:id_usuario", authenticateToken, getUsuarioById);
 router.patch("/edit/:id_usuario", authenticateToken, rateLimiter, updateUsuario);
 router.delete("/delete/:id_usuario", authenticateToken, rateLimiter, deleteUsuario);
-router.get("/", authenticateToken, getAllUsuarios);
+router.get("/", authenticateToken, checkAdmin, getAllUsuarios);
 router.post("/logout", authenticateToken, logout);
 
 export default router;
