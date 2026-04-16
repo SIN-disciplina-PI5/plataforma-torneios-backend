@@ -1,8 +1,11 @@
 import { loginService, logoutService } from "../services/authService.js";
+import { validarRecaptcha } from "../utils/recaptcha.js";
 
 export const login = async (req, res) => {
   try {
-    const token = await loginService(req.body.email, req.body.senha);
+    const { email, senha, recaptchaToken } = req.body;
+    await validarRecaptcha(recaptchaToken);
+    const token = await loginService(email, senha);
     return res.status(200).json({ token });
   } catch (e) {
     return res.status(401).json({ error: e.message });

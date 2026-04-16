@@ -1,100 +1,77 @@
 import models from "../models/index.js";
-const {  Usuario, Ranking, EquipeUsuario, PartidaUsuario, Partida } = models;
-import jwt from "jsonwebtoken";
+const { Usuario, Ranking, EquipeUsuario, PartidaUsuario, Partida, Equipe, Torneio } = models;
 
-export const criarUsuarioService = async (dados) => {
+export const createUsuarioService = async (dados) => {
   const { nome, email, senha } = dados;
-  if (!nome || !email || !senha) throw new Error("Dados faltando");
+  if (!nome) throw new Error("Nome é obrigatório");
+  if (!email) throw new Error("Email é obrigatório");
+  if (!senha) throw new Error("Senha é obrigatória");
 
   const usuarioExistente = await Usuario.findOne({ where: { email } });
   if (usuarioExistente) throw new Error("Email já cadastrado");
 
   const novoUsuario = await Usuario.create({
-    nome,
-    email,
-    senha: senha,
-    patente: null,
-    role: "USER"
+    nome, email, senha,
+    role: "USER",
+    patente: "Iniciante"
   });
 
-  const token = jwt.sign(
-    { id: novoUsuario.id_usuario, email: novoUsuario.email, role: novoUsuario.role },
-    process.env.MY_SECRET,
-    { expiresIn: parseInt(process.env.JWT_EXPIRES_IN) }
-  );
-
-  const { senha: _, ...usuarioSeguro } = novoUsuario.toJSON();
-  return { novoUsuario: usuarioSeguro, token };
+  return {
+    id_usuario: novoUsuario.id_usuario,
+    nome: novoUsuario.nome,
+    email: novoUsuario.email,
+    role: novoUsuario.role,
+    patente: novoUsuario.patente,
+  };
 };
 
 export const getAllUsuariosService = async () => {
   const usuarios = await Usuario.findAll({
-    attributes: { exclude: ['senha'] }
+    attributes: ["id_usuario", "nome", "email", "role", "patente"],
+    order: [["nome", "ASC"]]
   });
   return usuarios;
 };
 
 export const getUsuarioByIdService = async (id) => {
   const usuario = await Usuario.findByPk(id, {
-    attributes: { exclude: ['senha'] }
+    attributes: ["id_usuario", "nome", "email", "role", "patente"],
+    include: [{ model: Ranking, as: "ranking", attributes: ["pontos_acumulados", "posicao_atual"] }]
   });
   if (!usuario) throw new Error("Usuário não encontrado");
-  return usuario;
+
+  const { ranking, ...dadosUsuario } = usuario.toJSON();
+  return {
+    ...dadosUsuario,
+    ranking: ranking ? {
+      pontos: ranking.pontos_acumulados,
+      posicao: ranking.posicao_atual,
+    } : null,
+  };
 };
 
-export const editarUsuarioService = async (id, dados) => {
+export const updateUsuarioService = async (id, dados) => {
   const usuario = await Usuario.findByPk(id);
   if (!usuario) throw new Error("Usuário não encontrado");
-  
+
+  if (dados.email && dados.email !== usuario.email) {
+    const emailExistente = await Usuario.findOne({ where: { email: dados.email } });
+    if (emailExistente) throw new Error("Email já está em uso");
+  }
+
   await usuario.update(dados);
-  const { senha, ...usuarioSeguro } = usuario.toJSON();
-  return usuarioSeguro;
+  return {
+    id_usuario: usuario.id_usuario,
+    nome: usuario.nome,
+    email: usuario.email,
+    role: usuario.role,
+    patente: usuario.patente,
+  };
 };
 
-export const deletarUsuarioService = async (id) => {
-  const deletado = await Usuario.destroy({ where: { id_usuario: id } });
-  if (!deletado) throw new Error("Usuário não encontrado");
-};
-
-export const visualizarHistoricoService = async (userId) => {
-  const equipes = await EquipeUsuario.findAll({
-    where: { id_usuario: userId },
-    attributes: ["id_equipe"],
-  });
-  
-  if (!equipes || equipes.length === 0)
-    throw new Error("Usuário não está vinculado a nenhuma equipe.");
-
-  let equipeIds = [];
-  for (const e of equipes) {
-    equipeIds.push(e.id_equipe);
-  }
-
-  const partidasEquipes = await PartidaUsuario.findAll({
-    where: { id_equipe: equipeIds },
-    attributes: ["id_partida"],
-  });
-
-  let partidaIds = [];
-  for (const pe of partidasEquipes) {
-    if (!partidaIds.includes(pe.id_partida)) {
-      partidaIds.push(pe.id_partida);
-    }
-  }
-
-  if (partidaIds.length === 0) return { historico: [] };
-
-  const historico = await Partida.findAll({
-    where: { id_partida: partidaIds },
-    order: [["horario", "ASC"]],
-  });
-
-  return { historico };
-};
-
-export const visualizarRankingService = async () => {
-  const ranking = await Ranking.findAll({
-    order: [["pontos_acumulados", "DESC"]],
-  });
-  return { ranking };
+export const deleteUsuarioService = async (id) => {
+  const usuario = await Usuario.findByPk(id);
+  if (!usuario) throw new Error("Usuário não encontrado");
+  await usuario.destroy();
+  return { message: "Usuário deletado com sucesso" };
 };

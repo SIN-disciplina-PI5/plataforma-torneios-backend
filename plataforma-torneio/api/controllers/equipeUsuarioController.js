@@ -1,77 +1,51 @@
-import equipeUsuarioService from '../services/equipeUsuarioService.js';
+import {
+  createEquipeUsuarioService,
+  getAllEquipeUsuarioService,
+  getEquipeUsuarioByIdService,
+  deleteEquipeUsuarioService,
+} from "../services/equipeUsuarioService.js";
 
-const equipeUsuarioController = {
-  async getAllEquipeUsuarios(req, res, next) {
-    try {
-      const equipeUsuario = await equipeUsuarioService.getAll();
-
-      res.status(200).json({
-        status: 'success',
-        results: equipeUsuario.length,
-        data: { equipeUsuario },
-      });
-    } catch (err) {
-      next(err);
-    }
-  },
-
-  async getEquipeUsuarioById(req, res, next) {
-    try {
-      const equipeUsuario = await equipeUsuarioService.getById(req.params.equipeUsuarioId);
-
-      res.status(200).json({
-        status: 'success',
-        data: { equipeUsuario },
-      });
-    } catch (err) {
-      next(err);
-    }
-  },
-
-  async createEquipeUsuario(req, res, next) {
-    try {
-      const equipeUsuario = await equipeUsuarioService.create({
-        id_equipe: req.body.id_equipe,
-        id_usuario: req.body.id_usuario,
-      });
-
-      res.status(201).json({
-        status: 'success',
-        data: { equipeUsuario },
-      });
-    } catch (err) {
-      next(err);
-    }
-  },
-
-  async updateEquipeUsuario(req, res, next) {
-    try {
-      const equipeUsuario = await equipeUsuarioService.update(req.params.id, {
-        id_equipe: req.body.id_equipe,
-        id_usuario: req.body.id_usuario,
-      });
-
-      res.status(200).json({
-        status: 'success',
-        data: { equipeUsuario },
-      });
-    } catch (err) {
-      next(err);
-    }
-  },
-
-  async deleteEquipeUsuario(req, res, next) {
-    try {
-      await equipeUsuarioService.delete(req.params.id);
-
-      res.status(204).json({
-        status: 'success',
-        data: null,
-      });
-    } catch (err) {
-      next(err);
-    }
-  },
+export const createEquipeUsuario = async (req, res) => {
+  try {
+    const vinculo = await createEquipeUsuarioService({
+      id_equipe: req.body.id_equipe,
+      id_usuario: req.body.id_usuario,
+    });
+    return res.status(201).json({
+      message: "Vínculo criado com sucesso",
+      data: vinculo,
+    });
+  } catch (err) {
+    return res.status(400).json({ error: err.message });
+  }
 };
 
-export default equipeUsuarioController;
+export const getAllEquipeUsuarios = async (req, res) => {
+  try {
+    const vinculos = await getAllEquipeUsuarioService();
+    return res.status(200).json({
+      results: vinculos.length,
+      data: vinculos,
+    });
+  } catch (err) {
+    return res.status(400).json({ error: err.message });
+  }
+};
+
+export const getEquipeUsuarioById = async (req, res) => {
+  try {
+    const vinculo = await getEquipeUsuarioByIdService(req.params.id);
+    return res.status(200).json({ data: vinculo });
+  } catch (err) {
+    return res.status(404).json({ error: err.message });
+  }
+};
+
+export const deleteEquipeUsuario = async (req, res) => {
+  try {
+    await deleteEquipeUsuarioService(req.params.id);
+    return res.status(204).send();
+  } catch (err) {
+    return res.status(400).json({ error: err.message });
+  }
+};

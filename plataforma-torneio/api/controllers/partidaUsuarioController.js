@@ -1,73 +1,62 @@
 import {
-  criarPartidaUsuarioService,
-  buscarPartidaUsuarioService,
-  listarPartidasUsuarioService,
-  editarPartidaUsuarioService,
-  deletarPartidaUsuarioService,
-  vincularJogadorService,
-  definirResultadoService
+  createPartidaUsuarioService,
+  getPartidaUsuarioByIdService,
+  getAllPartidasUsuarioService,
+  updatePartidaUsuarioService,
+  deletePartidaUsuarioService,
+  definirStatusIndividualService,
 } from "../services/partidaUsuarioService.js";
 
-export const criarPartidaUsuario = async (req, res) => {
+export const createPartidaUsuario = async (req, res) => {
   try {
-    const result = await criarPartidaUsuarioService(req.body);
+    const result = await createPartidaUsuarioService(req.body);
     return res.status(201).json({ message: "Vínculo criado", data: result });
   } catch (e) {
     return res.status(400).json({ error: e.message });
   }
 };
 
-export const buscarPartidaUsuario = async (req, res) => {
+export const getPartidaUsuarioById = async (req, res) => {
   try {
-    const partidaUsuario = await buscarPartidaUsuarioService(req.params.id_partida_usuario);
-    return res.status(200).json(partidaUsuario);
+    const vinculo = await getPartidaUsuarioByIdService(req.params.id_partida_usuario);
+    return res.status(200).json({ data: vinculo });
+  } catch (e) {
+    return res.status(404).json({ error: e.message });
+  }
+};
+
+export const getAllPartidasUsuario = async (req, res) => {
+  try {
+    const vinculos = await getAllPartidasUsuarioService(req.query);
+    return res.status(200).json({ data: vinculos });
   } catch (e) {
     return res.status(400).json({ error: e.message });
   }
 };
 
-export const listarPartidasUsuario = async (req, res) => {
+export const updatePartidaUsuario = async (req, res) => {
   try {
-    const partidasUsuario = await listarPartidasUsuarioService(req.query);
-    return res.status(200).json(partidasUsuario);
+    const vinculo = await updatePartidaUsuarioService(req.params.id_partida_usuario, req.body);
+    return res.status(200).json({ message: "Vínculo atualizado", data: vinculo });
   } catch (e) {
     return res.status(400).json({ error: e.message });
   }
 };
 
-export const editarPartidaUsuario = async (req, res) => {
+export const deletePartidaUsuario = async (req, res) => {
   try {
-    const partidaUsuario = await editarPartidaUsuarioService(req.params.id_partida_usuario, req.body);
-    return res.status(200).json(partidaUsuario);
-  } catch (e) {
-    return res.status(400).json({ error: e.message });
-  }
-};
-
-export const deletarPartidaUsuario = async (req, res) => {
-  try {
-    await deletarPartidaUsuarioService(req.params.id_partida_usuario);
+    await deletePartidaUsuarioService(req.params.id_partida_usuario);
     return res.status(204).send();
   } catch (e) {
     return res.status(400).json({ error: e.message });
   }
 };
 
-export const vincularJogador = async (req, res) => {
-  try {
-    const { id_equipe } = req.body; 
-    const vinculo = await vincularJogadorService(req.params.id_partida, id_equipe);
-    return res.status(200).json(vinculo);
-  } catch (e) {
-    return res.status(400).json({ error: e.message });
-  }
-};
-
-export const definirResultado = async (req, res) => {
+export const definirStatusIndividual = async (req, res) => {
   try {
     const { status } = req.body;
-    const partidaUsuario = await definirResultadoService(req.params.id_partida_usuario, status);
-    return res.status(200).json(partidaUsuario);
+    const vinculo = await definirStatusIndividualService(req.params.id_partida_usuario, status);
+    return res.status(200).json({ message: "Status definido", data: vinculo });
   } catch (e) {
     return res.status(400).json({ error: e.message });
   }

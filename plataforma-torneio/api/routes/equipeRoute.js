@@ -1,16 +1,24 @@
 import { Router } from "express";
-import equipeController from "../controllers/equipeController.js";
+import {
+  createEquipe,
+  getAllEquipes,
+  getEquipeById,
+  updateEquipe,
+  deleteEquipe,
+  entrarNaEquipe,
+  sairDaEquipe
+} from "../controllers/equipeController.js";
 import { authenticateToken } from "../middlewares/authenticateToken.js";
+import checkAdmin from "../middlewares/checkAdmin.js";
 
 const router = Router();
 
-// Rota GET (Listar) - Pode ser pública ou protegida
-router.get("/", equipeController.getAllEquipes);
-router.get("/:id", equipeController.getEquipeById);
-
-// Rotas de Modificação - DEVEM ser protegidas
-router.post("/", authenticateToken, equipeController.createEquipe);
-router.put("/:id", authenticateToken, equipeController.updateEquipe);
-router.delete("/:id", authenticateToken, equipeController.deleteEquipe);
+router.get("/", authenticateToken, getAllEquipes);
+router.get("/:id", authenticateToken, getEquipeById);
+router.post("/:id_torneio", authenticateToken, createEquipe);
+router.post("/entrar/:id_torneio", authenticateToken, entrarNaEquipe);
+router.post("/sair/:id_torneio", authenticateToken, sairDaEquipe);
+router.put("/:id", authenticateToken, checkAdmin, updateEquipe);
+router.delete("/:id", authenticateToken, checkAdmin, deleteEquipe);
 
 export default router;

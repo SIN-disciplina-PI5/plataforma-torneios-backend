@@ -1,41 +1,30 @@
-const getEquipeModel = (sequelize, { DataTypes }) => {
-  const Equipe = sequelize.define(
-    "Equipe",
-    {
-      id_equipe: {
-        type: DataTypes.UUID,
-        defaultValue: DataTypes.UUIDV4,
-        primaryKey: true,
-      },
-      nome: {
-        type: DataTypes.STRING,
-        allowNull: true,
-      },
-      createdAt: {
-        type: DataTypes.DATE,
-        allowNull: false,
-        defaultValue: DataTypes.NOW,
-      },
-      updatedAt: {
-        type: DataTypes.DATE,
-        allowNull: false,
-        defaultValue: DataTypes.NOW,
-      },
-    },
-    {
-      tableName: "Equipes",
-    }
-  );
+import { DataTypes } from "sequelize";
 
-  // Associação: Uma Equipe tem vários usuários vinculados
-  Equipe.associate = (models) => {
-    Equipe.hasMany(models.EquipeUsuario, {
-      foreignKey: "id_equipe",
-      as: "membros",
-    });
-  };
+export default (sequelize) => {
+  const Equipe = sequelize.define("Equipe", {
+    id_equipe: {
+      type: DataTypes.UUID,
+      defaultValue: DataTypes.UUIDV4,
+      primaryKey: true,
+    },
+    nome: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    id_torneio: {
+      type: DataTypes.UUID,
+      allowNull: false,
+      references: {
+        model: "Torneios",
+        key: "id_torneio",
+      },
+      onUpdate: "CASCADE",
+      onDelete: "CASCADE",
+    },
+  },
+  {
+    tableName: "Equipes",
+  });
 
   return Equipe;
 };
-
-export default getEquipeModel;

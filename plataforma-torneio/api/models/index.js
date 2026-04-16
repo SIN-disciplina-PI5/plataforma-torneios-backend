@@ -1,5 +1,5 @@
 import "dotenv/config";
-import { Sequelize, DataTypes } from "sequelize";
+import { Sequelize } from "sequelize";
 import pg from "pg";
 
 import UsuarioModel from "./user.js";
@@ -7,17 +7,21 @@ import TorneioModel from "./torneio.js";
 import BlacklistModel from "./blacklist.js";
 import InscricaoModel from "./inscricao.js";
 import PartidaModel from "./partida.js";
-import getEquipeModel from "./equipe.js";
-import getEquipeUsuarioModel from "./equipeUsuario.js";
-import getRankingModel from "./ranking.js";
-import partidaUsuarioModel from "./partidaUsuario.js";
+import EquipeModel from "./equipe.js";
+import EquipeUsuarioModel from "./equipeUsuario.js";
+import RankingModel from "./ranking.js";
+import PartidaUsuarioModel from "./partidaUsuario.js";
 
 const sequelize = new Sequelize(process.env.POSTGRES_URL, {
   dialect: "postgres",
   protocol: "postgres",
-  dialectOptions: process.env.NODE_ENV === 'test' ? {} : {
-    ssl: { require: true, rejectUnauthorized: false },
-  },
+  dialectOptions:
+    process.env.NODE_ENV === "test" ? {} : {
+      ssl: {
+        require: true,
+        rejectUnauthorized: false
+      }
+    },
   dialectModule: pg,
   logging: false,
 });
@@ -25,90 +29,139 @@ const sequelize = new Sequelize(process.env.POSTGRES_URL, {
 const Usuario = UsuarioModel(sequelize);
 const Torneio = TorneioModel(sequelize);
 const Inscricao = InscricaoModel(sequelize);
-const Blacklist = BlacklistModel(sequelize, DataTypes);
-const Equipe = getEquipeModel(sequelize, { DataTypes });
-const EquipeUsuario = getEquipeUsuarioModel(sequelize, { DataTypes });
-const Ranking = getRankingModel(sequelize, { DataTypes });
+const Blacklist = BlacklistModel(sequelize);
+const Equipe = EquipeModel(sequelize);
+const EquipeUsuario = EquipeUsuarioModel(sequelize);
+const Ranking = RankingModel(sequelize);
 const Partida = PartidaModel(sequelize);
-const PartidaUsuario = partidaUsuarioModel(sequelize, DataTypes);
-// Relacionamentos
+const PartidaUsuario = PartidaUsuarioModel(sequelize);
 
 Usuario.belongsToMany(Equipe, {
   through: EquipeUsuario,
   foreignKey: "id_usuario",
   otherKey: "id_equipe",
-  as: "equipes", // Permite: usuario.getEquipes()
+  as: "equipes",
+  onDelete: "CASCADE",
+  onUpdate: "CASCADE",
 });
 
 Equipe.belongsToMany(Usuario, {
   through: EquipeUsuario,
   foreignKey: "id_equipe",
   otherKey: "id_usuario",
-  as: "membros", // Permite: equipe.getMembros()
+  as: "membros",
+  onDelete: "CASCADE",
+  onUpdate: "CASCADE",
 });
 
-EquipeUsuario.belongsTo(Equipe, { foreignKey: "id_equipe", as: "equipe" });
-EquipeUsuario.belongsTo(Usuario, { foreignKey: "id_usuario", as: "usuario" });
-
-Equipe.hasMany(Inscricao, {
-  foreignKey: "id_equipe",
+Usuario.hasMany(Inscricao, {
+  foreignKey: "id_usuario",
   as: "inscricoes",
+  onDelete: "CASCADE",
+  onUpdate: "CASCADE",
 });
-Inscricao.belongsTo(Equipe, {
-  foreignKey: "id_equipe",
-  as: "equipe",
+
+Inscricao.belongsTo(Usuario, {
+  foreignKey: "id_usuario",
+  as: "usuario",
+  onDelete: "CASCADE",
+  onUpdate: "CASCADE",
 });
 
 Torneio.hasMany(Inscricao, {
   foreignKey: "id_torneio",
+  as: "inscricoes",
   onDelete: "CASCADE",
   onUpdate: "CASCADE",
 });
-Inscricao.belongsTo(Torneio, { foreignKey: "id_torneio" });
 
-Partida.belongsTo(Torneio, { foreignKey: "id_torneio" });
-Torneio.hasMany(Partida, { foreignKey: "id_torneio" });
+Inscricao.belongsTo(Torneio, {
+  foreignKey: "id_torneio",
+  as: "torneio",
+  onDelete: "CASCADE",
+  onUpdate: "CASCADE",
+});
 
-//ranking
+Torneio.hasMany(Equipe, {
+  foreignKey: "id_torneio",
+  as: "equipes",
+  onDelete: "CASCADE",
+  onUpdate: "CASCADE",
+});
+
+Equipe.belongsTo(Torneio, {
+  foreignKey: "id_torneio",
+  as: "torneio",
+  onDelete: "CASCADE",
+  onUpdate: "CASCADE",
+});
+
+Equipe.hasMany(Inscricao, {
+  foreignKey: "id_equipe",
+  as: "inscricoes_equipe",
+  onDelete: "SET NULL",
+  onUpdate: "CASCADE",
+});
+
+Inscricao.belongsTo(Equipe, {
+  foreignKey: "id_equipe",
+  as: "equipe_dupla",
+  onDelete: "SET NULL",
+  onUpdate: "CASCADE",
+});
 
 Usuario.hasOne(Ranking, {
   foreignKey: "id_usuario",
   as: "ranking",
+  onDelete: "CASCADE",
+  onUpdate: "CASCADE",
 });
 
 Ranking.belongsTo(Usuario, {
   foreignKey: "id_usuario",
   as: "usuario",
-});
-
-// partida
-
-Partida.belongsTo(Torneio, {
-  foreignKey: "id_torneio",
+  onDelete: "CASCADE",
+  onUpdate: "CASCADE",
 });
 
 Torneio.hasMany(Partida, {
   foreignKey: "id_torneio",
+  onDelete: "CASCADE",
+  onUpdate: "CASCADE",
+});
+
+Partida.belongsTo(Torneio, {
+  foreignKey: "id_torneio",
+  onDelete: "CASCADE",
+  onUpdate: "CASCADE",
 });
 
 Partida.hasMany(PartidaUsuario, {
   foreignKey: "id_partida",
   as: "equipesPartida",
+  onDelete: "CASCADE",
+  onUpdate: "CASCADE",
 });
 
 PartidaUsuario.belongsTo(Partida, {
   foreignKey: "id_partida",
   as: "partida",
+  onDelete: "CASCADE",
+  onUpdate: "CASCADE",
 });
 
 Equipe.hasMany(PartidaUsuario, {
   foreignKey: "id_equipe",
   as: "partidasEquipe",
+  onDelete: "CASCADE",
+  onUpdate: "CASCADE",
 });
 
 PartidaUsuario.belongsTo(Equipe, {
   foreignKey: "id_equipe",
   as: "equipe",
+  onDelete: "CASCADE",
+  onUpdate: "CASCADE",
 });
 
 export default {

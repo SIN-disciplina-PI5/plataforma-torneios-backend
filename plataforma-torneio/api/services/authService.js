@@ -5,18 +5,17 @@ import bcrypt from "bcrypt";
 
 export const loginService = async (email, senha) => {
   const usuario = await Usuario.findOne({ where: { email } });
-  if (!usuario) throw new Error("Usuário ou senha inválidos");
+  if (!usuario) throw new Error("Email ou senha inválidos");
 
   const match = await bcrypt.compare(senha, usuario.senha);
-  
-  if (!match) throw new Error("Usuário ou senha inválidos");
+  if (!match) throw new Error("Email ou senha inválidos");
 
   const token = jwt.sign(
     { id: usuario.id_usuario, email: usuario.email, role: usuario.role },
     process.env.MY_SECRET,
     { expiresIn: parseInt(process.env.JWT_EXPIRES_IN) }
   );
-  
+
   return token;
 };
 
