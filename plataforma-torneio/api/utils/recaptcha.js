@@ -13,7 +13,6 @@ export const validarRecaptcha = async (token) => {
       },
     }
   );
-
   if (!response.data.success) {
     throw new Error("Falha no recaptcha");
   }
