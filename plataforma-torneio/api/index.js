@@ -29,7 +29,7 @@ if (process.env.NODE_ENV !== "test") {
     .then(() => console.log("Banco sincronizado com segurança ✅"))
     .catch((err) => console.error("Erro ao sincronizar banco:", err));
 
-  const port = process.env.PORT ?? 3000;
+  const port = process.env.PORT ?? 4000;
   app.listen(port, () => console.log(`Listening on ${port}`));
 }
 
