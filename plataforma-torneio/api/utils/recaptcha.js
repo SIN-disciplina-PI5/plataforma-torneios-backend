@@ -1,3 +1,5 @@
+
+
 import axios from "axios";
 
 export const validarRecaptcha = async (token) => {
@@ -13,8 +15,13 @@ export const validarRecaptcha = async (token) => {
       },
     }
   );
+  // CHORE: Log para depuração do recaptcha
+  console.log("RECAPTCHA RESPONSE:", response.data);
+
   if (!response.data.success) {
-    throw new Error("Falha no recaptcha");
+  throw new Error(
+    "Falha no recaptcha: " + JSON.stringify(response.data["error-codes"])
+  );
   }
 
   return true;
