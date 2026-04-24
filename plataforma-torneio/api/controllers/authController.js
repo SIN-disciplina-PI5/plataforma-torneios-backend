@@ -4,9 +4,9 @@ import { validarRecaptcha } from "../utils/recaptcha.js";
 export const login = async (req, res) => {
   try {
     const { email, senha, recaptchaToken } = req.body;
-    if (!recaptchaToken) {
-        await validarRecaptcha(recaptchaToken);
-    } 
+    // if (recaptchaToken) {
+    //     // await validarRecaptcha(recaptchaToken);
+    // } 
     // if (!recaptchaToken) {
       // return res.status(400).json({ error: "Recaptcha obrigatório" });
     ;

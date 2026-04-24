@@ -13,9 +13,9 @@ export const createUsuario = async (req, res) => {
     const { recaptchaToken, ...dados } = req.body;
 
     // Valida o recaptcha apenas se o token for fornecido, recaptcha não obrighatorio
-    if (recaptchaToken) {
-      await validarRecaptcha(recaptchaToken);
-    }
+    // if (recaptchaToken) {
+      // await validarRecaptcha(recaptchaToken);
+    // }
     // return res.status(400).json({ error: "Recaptcha obrigatório" });
     
 
