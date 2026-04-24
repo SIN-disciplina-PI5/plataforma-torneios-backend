@@ -5,9 +5,11 @@ export const login = async (req, res) => {
   try {
     const { email, senha, recaptchaToken } = req.body;
     if (!recaptchaToken) {
-      return res.status(400).json({ error: "Recaptcha obrigatório" });
-    }
-    await validarRecaptcha(recaptchaToken);
+        await validarRecaptcha(recaptchaToken);
+    } 
+    // if (!recaptchaToken) {
+      // return res.status(400).json({ error: "Recaptcha obrigatório" });
+    ;
     const token = await loginService(email, senha);
     return res.status(200).json({ token });
   } catch (e) {
