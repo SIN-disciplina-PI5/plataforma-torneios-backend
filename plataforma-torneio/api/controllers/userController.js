@@ -12,11 +12,12 @@ export const createUsuario = async (req, res) => {
   try {
     const { recaptchaToken, ...dados } = req.body;
 
-    if (!recaptchaToken) {
-      return res.status(400).json({ error: "Recaptcha obrigatório" });
+    // Valida o recaptcha apenas se o token for fornecido, recaptcha não obrighatorio
+    if (recaptchaToken) {
+      await validarRecaptcha(recaptchaToken);
     }
-
-    await validarRecaptcha(recaptchaToken);
+    // return res.status(400).json({ error: "Recaptcha obrigatório" });
+    
 
     const result = await createUsuarioService(dados);
 
