@@ -20,7 +20,7 @@ export default (sequelize) => {
     vagas: {
       type: DataTypes.INTEGER,
       allowNull: false,
-      validate: { notEmpty: true, isInt: true, min: 0, max: 16 },
+      validate: { notEmpty: true, isInt: true, min: 0, max: 32 },
     },
     status: {
       type: DataTypes.BOOLEAN,

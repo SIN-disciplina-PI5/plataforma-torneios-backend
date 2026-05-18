@@ -8,14 +8,18 @@ export const createTorneioService = async (dados) => {
   if (!categoria) throw new Error("Categoria é obrigatória");
   if (!vagas) throw new Error("Número de vagas é obrigatório");
 
-  const torneioExistente = await Torneio.findOne({ where: { nome } });
-  if (torneioExistente) throw new Error("Já existe um torneio com este nome");
+  const vagasValidas = [4, 8, 16, 32];
 
+  if (!vagasValidas.includes(Number(vagas))) throw new Error("As vagas devem ser 4, 8, 16 ou 32");
+  const torneioExistente = await Torneio.findOne({
+    where: { nome }
+  });
+  if (torneioExistente) throw new Error("Já existe um torneio com este nome");
   const novoTorneio = await Torneio.create({
     nome,
     categoria,
     vagas,
-    status: true, 
+    status: true,
   });
 
   return {
@@ -55,13 +59,21 @@ export const getTorneioByIdService = async (id) => {
 export const updateTorneioService = async (id, dados) => {
   const torneio = await Torneio.findByPk(id);
   if (!torneio) throw new Error("Torneio não encontrado");
-
   if (dados.nome && dados.nome !== torneio.nome) {
-    const torneioExistente = await Torneio.findOne({ where: { nome: dados.nome } });
+    const torneioExistente = await Torneio.findOne({
+      where: { nome: dados.nome }
+    });
     if (torneioExistente) throw new Error("Já existe um torneio com este nome");
   }
+  if (dados.vagas !== undefined) {
+    const vagasValidas = [4, 8, 16, 32];
 
+    if (!vagasValidas.includes(Number(dados.vagas))) {
+      throw new Error("As vagas devem ser 4, 8, 16 ou 32");
+    }
+  }
   await torneio.update(dados);
+
   return {
     id_torneio: torneio.id_torneio,
     nome: torneio.nome,
@@ -96,7 +108,7 @@ export const gerarChaveService = async (id_torneio) => {
   if (equipes.length < 2)
     throw new Error("Não há equipes suficientes para gerar chave");
 
-  const tamanhosValidos = [2, 4, 8, 16];
+  const tamanhosValidos = [4, 8, 16, 32];
 
   if (!tamanhosValidos.includes(equipes.length)) throw new Error("Número de equipes inválido para torneio eliminatório");
 

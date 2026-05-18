@@ -1,4 +1,4 @@
-import models from "../models/index.js";
+import models, { sequelize } from "../models/index.js";
 const { Inscricao, Equipe, Torneio, Usuario } = models;
 
 export const createInscricaoService = async (data) => {
@@ -12,6 +12,7 @@ export const createInscricaoService = async (data) => {
 
   const torneio = await Torneio.findByPk(id_torneio);
   if (!torneio) throw new Error("Torneio não encontrado");
+  if (!torneio.status) throw new Error("Torneio não está ativo para inscrições");
 
   const inscricaoExistente = await Inscricao.findOne({
     where: { id_usuario, id_torneio }

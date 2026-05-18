@@ -50,7 +50,7 @@ export const getUsuarioById = async (req, res) => {
 
 export const updateUsuario = async (req, res) => {
   try {
-    const usuario = await updateUsuarioService(req.params.id_usuario, req.body);
+    const usuario = await updateUsuarioService(req.params.id_usuario, req.body, req.user);
     return res.status(200).json({
       message: "Perfil atualizado com sucesso",
       data: usuario,

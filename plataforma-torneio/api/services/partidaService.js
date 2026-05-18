@@ -1,5 +1,6 @@
 import models from "../models/index.js";
-const { Partida, Torneio } = models;
+const { Partida, Torneio, Equipe, Usuario } = models;
+import { atualizarPontuacaoService } from "./rankingService.js";
 
 export const createPartidaService = async (dados) => {
   const { id_torneio, fase, status, horario } = dados;

@@ -50,15 +50,20 @@ export const getUsuarioByIdService = async (id) => {
   };
 };
 
-export const updateUsuarioService = async (id, dados, usuarioLogado) => {
+export const updateUsuarioService = async (id, dados = {}, usuarioLogado = null) => {
   const usuario = await Usuario.findByPk(id);
   if (!usuario) throw new Error("Usuário não encontrado");
   const camposPermitidos = ["nome", "email", "senha"];
-  if (usuarioLogado.role === "ADMIN") {
+  if (usuarioLogado && usuarioLogado.role === "ADMIN") {
     camposPermitidos.push(
       "role",
       "patente"
     );
+  }
+  for (const campo of Object.keys(dados)) {
+    if (!camposPermitidos.includes(campo)) {
+      throw new Error(`Campo ${campo} não pode ser alterado`);
+    }
   }
   const dadosFiltrados = {};
   for (const campo of camposPermitidos) {
@@ -67,7 +72,13 @@ export const updateUsuarioService = async (id, dados, usuarioLogado) => {
     }
   }
   await usuario.update(dadosFiltrados);
-  return usuario;
+  return {
+    id_usuario: usuario.id_usuario,
+    nome: usuario.nome,
+    email: usuario.email,
+    role: usuario.role,
+    patente: usuario.patente,
+  }
 };
 
 export const deleteUsuarioService = async (id) => {
