@@ -3,23 +3,31 @@ import { Op } from "sequelize";
 const { Torneio, Inscricao, Partida, PartidaUsuario } = models;
 
 export const createTorneioService = async (dados) => {
-  const { nome, categoria, vagas } = dados;
+  const { nome, categoria, vagas, data_inicio, data_fim } = dados;
   if (!nome) throw new Error("Nome do torneio é obrigatório");
   if (!categoria) throw new Error("Categoria é obrigatória");
   if (!vagas) throw new Error("Número de vagas é obrigatório");
+  if (!data_inicio) throw new Error("Data de início é obrigatória");
+  if (!data_fim) throw new Error("Data de fim é obrigatória");
+
+  const inicio = new Date(data_inicio);
+  const fim = new Date(data_fim);
+  if (isNaN(inicio) || isNaN(fim)) throw new Error("Datas inválidas");
+  if (fim <= inicio) throw new Error("Data de fim deve ser posterior à data de início");
 
   const vagasValidas = [4, 8, 16, 32];
-
   if (!vagasValidas.includes(Number(vagas))) throw new Error("As vagas devem ser 4, 8, 16 ou 32");
-  const torneioExistente = await Torneio.findOne({
-    where: { nome }
-  });
+
+  const torneioExistente = await Torneio.findOne({ where: { nome } });
   if (torneioExistente) throw new Error("Já existe um torneio com este nome");
+
   const novoTorneio = await Torneio.create({
     nome,
     categoria,
     vagas,
     status: true,
+    data_inicio: inicio,
+    data_fim: fim,
   });
 
   return {
@@ -28,6 +36,8 @@ export const createTorneioService = async (dados) => {
     categoria: novoTorneio.categoria,
     vagas: novoTorneio.vagas,
     status: novoTorneio.status,
+    data_inicio: novoTorneio.data_inicio,
+    data_fim: novoTorneio.data_fim,
   };
 };
 
@@ -41,6 +51,8 @@ export const getAllTorneiosService = async () => {
     categoria: t.categoria,
     vagas: t.vagas,
     status: t.status,
+    data_inicio: t.data_inicio,
+    data_fim: t.data_fim,
   }));
 };
 
@@ -53,33 +65,44 @@ export const getTorneioByIdService = async (id) => {
     categoria: torneio.categoria,
     vagas: torneio.vagas,
     status: torneio.status,
+    data_inicio: torneio.data_inicio,
+    data_fim: torneio.data_fim,
   };
 };
 
 export const updateTorneioService = async (id, dados) => {
   const torneio = await Torneio.findByPk(id);
   if (!torneio) throw new Error("Torneio não encontrado");
+  if (dados.data_inicio || dados.data_fim) {
+    const inicio = dados.data_inicio ? new Date(dados.data_inicio) : torneio.data_inicio;
+    const fim = dados.data_fim ? new Date(dados.data_fim) : torneio.data_fim;
+    if (isNaN(inicio) || isNaN(fim)) throw new Error("Datas inválidas");
+    if (fim <= inicio) throw new Error("Data de fim deve ser posterior à data de início");
+    dados.data_inicio = inicio;
+    dados.data_fim = fim;
+  }
+
   if (dados.nome && dados.nome !== torneio.nome) {
-    const torneioExistente = await Torneio.findOne({
-      where: { nome: dados.nome }
-    });
+    const torneioExistente = await Torneio.findOne({ where: { nome: dados.nome } });
     if (torneioExistente) throw new Error("Já existe um torneio com este nome");
   }
+
   if (dados.vagas !== undefined) {
     const vagasValidas = [4, 8, 16, 32];
-
     if (!vagasValidas.includes(Number(dados.vagas))) {
       throw new Error("As vagas devem ser 4, 8, 16 ou 32");
     }
   }
-  await torneio.update(dados);
 
+  await torneio.update(dados);
   return {
     id_torneio: torneio.id_torneio,
     nome: torneio.nome,
     categoria: torneio.categoria,
     vagas: torneio.vagas,
     status: torneio.status,
+    data_inicio: torneio.data_inicio,
+    data_fim: torneio.data_fim,
   };
 };
 
@@ -91,29 +114,26 @@ export const deleteTorneioService = async (id) => {
 };
 
 export const gerarChaveService = async (id_torneio) => {
-  const partidasExistentes = await Partida.findOne({
-    where: { id_torneio }
-  });
-  if (partidasExistentes)
-    throw new Error("A chave do torneio já foi gerada");
+  const torneio = await Torneio.findByPk(id_torneio);
+  if (!torneio) throw new Error("Torneio não encontrado");
+  if (new Date() > torneio.data_inicio) {
+    throw new Error("Não é possível gerar a chave após o início do torneio");
+  }
+
+  const partidasExistentes = await Partida.findOne({ where: { id_torneio } });
+  if (partidasExistentes) throw new Error("A chave do torneio já foi gerada");
 
   const inscricoes = await Inscricao.findAll({
-    where: {
-      id_torneio,
-      status: "APROVADA"
-    }
+    where: { id_torneio, status: "APROVADA" }
   });
 
   const equipes = inscricoes.map(i => i.id_equipe);
-  if (equipes.length < 2)
-    throw new Error("Não há equipes suficientes para gerar chave");
+  if (equipes.length < 2) throw new Error("Não há equipes suficientes para gerar chave");
 
   const tamanhosValidos = [4, 8, 16, 32];
-
   if (!tamanhosValidos.includes(equipes.length)) throw new Error("Número de equipes inválido para torneio eliminatório");
 
   const embaralhadas = equipes.sort(() => Math.random() - 0.5);
-
   const partidasCriadas = [];
 
   for (let i = 0; i < embaralhadas.length; i += 2) {
@@ -122,18 +142,10 @@ export const gerarChaveService = async (id_torneio) => {
       fase: "OITAVAS_DE_FINAL",
       status: "PENDENTE"
     });
-
     await PartidaUsuario.bulkCreate([
-      {
-        id_partida: partida.id_partida,
-        id_equipe: embaralhadas[i]
-      },
-      {
-        id_partida: partida.id_partida,
-        id_equipe: embaralhadas[i + 1]
-      }
+      { id_partida: partida.id_partida, id_equipe: embaralhadas[i] },
+      { id_partida: partida.id_partida, id_equipe: embaralhadas[i + 1] }
     ]);
-
     partidasCriadas.push({
       id_partida: partida.id_partida,
       fase: partida.fase,
@@ -148,22 +160,14 @@ export const avancarFaseService = async (id_torneio, faseAtual) => {
     where: {
       id_torneio,
       fase: faseAtual,
-      status: {
-        [Op.ne]: "FINALIZADA"
-      }
+      status: { [Op.ne]: "FINALIZADA" }
     }
   });
-
   if (partidasPendentes > 0) throw new Error("Ainda existem partidas não finalizadas nessa fase");
 
   const partidas = await Partida.findAll({
-    where: {
-      id_torneio,
-      fase: faseAtual,
-      status: "FINALIZADA"
-    }
+    where: { id_torneio, fase: faseAtual, status: "FINALIZADA" }
   });
-
   const vencedores = partidas.map(p => p.vencedor_id);
   if (vencedores.length % 2 !== 0) throw new Error("Número inválido de vencedores");
 
@@ -172,26 +176,20 @@ export const avancarFaseService = async (id_torneio, faseAtual) => {
     "QUARTAS_DE_FINAL": "SEMI_FINAL",
     "SEMI_FINAL": "FINAL"
   };
-
   const proximaFase = mapaFases[faseAtual];
-
-  if (!proximaFase)
-    throw new Error("Fase final já concluída");
+  if (!proximaFase) throw new Error("Fase final já concluída");
 
   const novasPartidas = [];
-
   for (let i = 0; i < vencedores.length; i += 2) {
     const partida = await Partida.create({
       id_torneio,
       fase: proximaFase,
       status: "PENDENTE"
     });
-
     await PartidaUsuario.bulkCreate([
       { id_partida: partida.id_partida, id_equipe: vencedores[i] },
       { id_partida: partida.id_partida, id_equipe: vencedores[i + 1] }
     ]);
-
     novasPartidas.push({
       id_partida: partida.id_partida,
       fase: partida.fase,
@@ -203,15 +201,15 @@ export const avancarFaseService = async (id_torneio, faseAtual) => {
 
 export const atualizarStatusService = async (id_torneio, status) => {
   const torneio = await Torneio.findByPk(id_torneio);
-
   if (!torneio) throw new Error("Torneio não encontrado");
-
   await torneio.update({ status });
   return {
     id_torneio: torneio.id_torneio,
     nome: torneio.nome,
     categoria: torneio.categoria,
     vagas: torneio.vagas,
-    status: torneio.status
+    status: torneio.status,
+    data_inicio: torneio.data_inicio,
+    data_fim: torneio.data_fim,
   };
 };

@@ -26,5 +26,13 @@ export default (sequelize) => {
       type: DataTypes.BOOLEAN,
       allowNull: false,
     },
+    data_inicio: {
+      type: DataTypes.DATE,
+      allowNull: false,
+    },
+    data_fim: {
+      type: DataTypes.DATE,
+      allowNull: false,
+    },
   });
 };

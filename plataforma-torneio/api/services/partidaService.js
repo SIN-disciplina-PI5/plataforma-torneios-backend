@@ -2,6 +2,17 @@ import models from "../models/index.js";
 const { Partida, Torneio, Equipe, Usuario } = models;
 import { atualizarPontuacaoService } from "./rankingService.js";
 
+//função auxiliar para validar horário 
+const validarHorarioNoTorneio = async (id_torneio, horario) => {
+  const torneio = await Torneio.findByPk(id_torneio);
+  if (!torneio) throw new Error("Torneio não encontrado");
+  const dataHorario = new Date(horario);
+  if (dataHorario < torneio.data_inicio || dataHorario > torneio.data_fim) {
+    throw new Error(`Horário da partida deve estar entre ${torneio.data_inicio} e ${torneio.data_fim}`);
+  }
+  return true;
+};
+
 export const createPartidaService = async (dados) => {
   const { id_torneio, fase, status, horario } = dados;
   if (!id_torneio) throw new Error("ID do torneio é obrigatório");
@@ -10,6 +21,10 @@ export const createPartidaService = async (dados) => {
 
   const torneio = await Torneio.findByPk(id_torneio);
   if (!torneio) throw new Error("Torneio não encontrado");
+
+  if (horario) {
+    await validarHorarioNoTorneio(id_torneio, horario);
+  }
 
   const novaPartida = await Partida.create({
     id_torneio, fase, status, horario,
@@ -64,6 +79,11 @@ export const getAllPartidasService = async (filtros = {}) => {
 export const updatePartidaService = async (id, dados) => {
   const partida = await Partida.findByPk(id);
   if (!partida) throw new Error("Partida não encontrada");
+
+  if (dados.horario) {
+    await validarHorarioNoTorneio(partida.id_torneio, dados.horario);
+  }
+
   await partida.update(dados);
   return {
     id_partida: partida.id_partida,
@@ -84,10 +104,13 @@ export const deletePartidaService = async (id) => {
   return { message: "Partida deletada com sucesso" };
 };
 
-// Funções específicas
 export const agendarPartidaService = async (id, horario) => {
   const partida = await Partida.findByPk(id);
   if (!partida) throw new Error("Partida não encontrada");
+  if (!horario) throw new Error("Horário obrigatório");
+
+  await validarHorarioNoTorneio(partida.id_torneio, horario);
+
   await partida.update({ horario, status: "PENDENTE" });
   return {
     id_partida: partida.id_partida,
@@ -99,9 +122,19 @@ export const agendarPartidaService = async (id, horario) => {
 export const iniciarPartidaService = async (id) => {
   const partida = await Partida.findByPk(id);
   if (!partida) throw new Error("Partida não encontrada");
+
+  const torneio = await Torneio.findByPk(partida.id_torneio);
+  const agora = new Date();
+  if (agora < torneio.data_inicio) {
+    throw new Error("O torneio ainda não começou");
+  }
+  if (agora > torneio.data_fim) {
+    throw new Error("O torneio já terminou");
+  }
+
   await partida.update({
     status: "EM_ANDAMENTO",
-    horario: partida.horario || new Date()
+    horario: partida.horario || agora
   });
   return {
     id_partida: partida.id_partida,
