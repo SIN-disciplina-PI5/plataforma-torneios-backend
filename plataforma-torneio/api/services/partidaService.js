@@ -113,19 +113,50 @@ export const finalizarPartidaService = async (id, dados) => {
   const { placar, vencedor_id, resultado } = dados;
   const partida = await Partida.findByPk(id);
   if (!partida) throw new Error("Partida não encontrada");
-  
+  if (!vencedor_id) throw new Error("Vencedor obrigatório");
+
   await partida.update({
     placar: placar || partida.placar,
-    vencedor_id: vencedor_id || partida.vencedor_id,
+    vencedor_id,
     resultado: resultado || partida.resultado,
     status: "FINALIZADA"
   });
-  
+
+  const equipeVencedora = await Equipe.findByPk(vencedor_id,{
+    include:[
+      {
+        model: Usuario,
+        as: "membros",
+        attributes:["id_usuario"]
+      }
+    ]
+  });
+
+  if (!equipeVencedora) throw new Error("Equipe vencedora não encontrada");
+  let tipoEvento = null;
+  if (partida.fase === "OITAVAS_DE_FINAL")
+    tipoEvento = "AVANCO_FASE";
+  if (partida.fase === "QUARTAS_DE_FINAL")
+    tipoEvento = "AVANCO_FASE";
+  if (partida.fase === "SEMI_FINAL")
+    tipoEvento = "FINALISTA";
+  if (partida.fase === "FINAL")
+    tipoEvento = "CAMPEAO";
+
+  if (tipoEvento){
+    for (const membro of equipeVencedora.membros){
+      await atualizarPontuacaoService(
+        membro.id_usuario,
+        tipoEvento
+      );
+    }
+  }
+
   return {
     id_partida: partida.id_partida,
     status: partida.status,
     placar: partida.placar,
     vencedor_id: partida.vencedor_id,
-    resultado: partida.resultado,
+    resultado: partida.resultado
   };
 };

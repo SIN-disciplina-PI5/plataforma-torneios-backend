@@ -50,23 +50,24 @@ export const getUsuarioByIdService = async (id) => {
   };
 };
 
-export const updateUsuarioService = async (id, dados) => {
+export const updateUsuarioService = async (id, dados, usuarioLogado) => {
   const usuario = await Usuario.findByPk(id);
   if (!usuario) throw new Error("Usuário não encontrado");
-
-  if (dados.email && dados.email !== usuario.email) {
-    const emailExistente = await Usuario.findOne({ where: { email: dados.email } });
-    if (emailExistente) throw new Error("Email já está em uso");
+  const camposPermitidos = ["nome", "email", "senha"];
+  if (usuarioLogado.role === "ADMIN") {
+    camposPermitidos.push(
+      "role",
+      "patente"
+    );
   }
-
-  await usuario.update(dados);
-  return {
-    id_usuario: usuario.id_usuario,
-    nome: usuario.nome,
-    email: usuario.email,
-    role: usuario.role,
-    patente: usuario.patente,
-  };
+  const dadosFiltrados = {};
+  for (const campo of camposPermitidos) {
+    if (dados[campo] !== undefined) {
+      dadosFiltrados[campo] = dados[campo];
+    }
+  }
+  await usuario.update(dadosFiltrados);
+  return usuario;
 };
 
 export const deleteUsuarioService = async (id) => {

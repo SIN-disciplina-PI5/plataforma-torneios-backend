@@ -121,35 +121,46 @@ export const getInscricaoByIdService = async (id) => {
 };
 
 export const updateInscricaoService = async (id, data) => {
-  const { status } = data;
+  const transaction = await sequelize.transaction();
+  const inscricao = await Inscricao.findByPk(id,{
+    transaction
+  });
 
-  if (!status) throw new Error("Status é obrigatório");
+  if (!inscricao){
+    await transaction.rollback();
+    throw new Error("Inscrição não encontrada");
+  }
 
-  const inscricao = await Inscricao.findByPk(id);
-  if (!inscricao) throw new Error("Inscrição não encontrada");
-
-  if (status === "APROVADA") {
-    const torneio = await Torneio.findByPk(inscricao.id_torneio);
+  if (data.status === "APROVADA") {
+    const torneio = await Torneio.findByPk(
+      inscricao.id_torneio,
+      { transaction }
+    );
 
     const totalAprovadas = await Inscricao.count({
-      where: {
+      where:{
         id_torneio: inscricao.id_torneio,
         status: "APROVADA"
-      }
+      },
+      transaction
     });
 
-    if (totalAprovadas >= torneio.vagas) {
-      throw new Error("Torneio está com todas as vagas preenchidas");
+    if (totalAprovadas >= torneio.vagas){
+      await transaction.rollback();
+      throw new Error("Torneio lotado");
     }
   }
 
-  await inscricao.update({ status });
-
+  await inscricao.update(
+    { status: data.status },
+    { transaction }
+  );
+  await transaction.commit();
   return {
     id_inscricao: inscricao.id_inscricao,
     id_usuario: inscricao.id_usuario,
     id_torneio: inscricao.id_torneio,
-    status: inscricao.status,
+    status: inscricao.status
   };
 };
 

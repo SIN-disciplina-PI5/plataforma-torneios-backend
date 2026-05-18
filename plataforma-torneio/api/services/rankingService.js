@@ -10,7 +10,6 @@ const PATENTES = {
 };
 
 const REGRA_PONTOS = {
-  VITORIA_FASE_GRUPOS: 5,
   AVANCO_FASE: 10,
   FINALISTA: 20,
   CAMPEAO: 50
@@ -115,6 +114,8 @@ export const atualizarPontuacaoService = async (id_usuario, tipoEvento) => {
   const ranking = await buscarOuCriarRanking(id_usuario);
   ranking.pontos_acumulados += pontos;
   ranking.ultima_atualizacao = new Date();
+  await ranking.save();
+  await ranking.reload();
   await ranking.save();
 
   await recalcularPosicoes();

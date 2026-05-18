@@ -96,10 +96,9 @@ export const gerarChaveService = async (id_torneio) => {
   if (equipes.length < 2)
     throw new Error("Não há equipes suficientes para gerar chave");
 
-  const tamanhosValidos = [4, 8, 16, 32, 64];
+  const tamanhosValidos = [2, 4, 8, 16];
 
-  if (!tamanhosValidos.includes(equipes.length))
-    throw new Error("Número de equipes inválido para torneio eliminatório");
+  if (!tamanhosValidos.includes(equipes.length)) throw new Error("Número de equipes inválido para torneio eliminatório");
 
   const embaralhadas = equipes.sort(() => Math.random() - 0.5);
 
@@ -143,8 +142,7 @@ export const avancarFaseService = async (id_torneio, faseAtual) => {
     }
   });
 
-  if (partidasPendentes > 0)
-    throw new Error("Ainda existem partidas não finalizadas nessa fase");
+  if (partidasPendentes > 0) throw new Error("Ainda existem partidas não finalizadas nessa fase");
 
   const partidas = await Partida.findAll({
     where: {
@@ -155,8 +153,7 @@ export const avancarFaseService = async (id_torneio, faseAtual) => {
   });
 
   const vencedores = partidas.map(p => p.vencedor_id);
-  if (vencedores.length % 2 !== 0)
-    throw new Error("Número inválido de vencedores");
+  if (vencedores.length % 2 !== 0) throw new Error("Número inválido de vencedores");
 
   const mapaFases = {
     "OITAVAS_DE_FINAL": "QUARTAS_DE_FINAL",
@@ -195,8 +192,7 @@ export const avancarFaseService = async (id_torneio, faseAtual) => {
 export const atualizarStatusService = async (id_torneio, status) => {
   const torneio = await Torneio.findByPk(id_torneio);
 
-  if (!torneio)
-    throw new Error("Torneio não encontrado");
+  if (!torneio) throw new Error("Torneio não encontrado");
 
   await torneio.update({ status });
   return {
