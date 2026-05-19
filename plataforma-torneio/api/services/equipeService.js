@@ -1,41 +1,32 @@
 import models from "../models/index.js";
-const { Equipe, Usuario, EquipeUsuario, Inscricao } = models;
+const { Equipe, EquipeUsuario, Inscricao, Torneio, Usuario } = models;
 
 export const createEquipeService = async (id_torneio, id_usuario, nome) => {
-  if (!nome)
-    throw new Error("Nome da equipe é obrigatório");
+  if (!nome) throw new Error("Nome da equipe é obrigatório");
 
   const inscricao = await Inscricao.findOne({
-    where: {
-      id_usuario,
-      id_torneio,
-      status: "APROVADA"
-    }
+    where: { id_usuario, id_torneio, status: "APROVADA" }
   });
   if (!inscricao) throw new Error("Usuário precisa estar aprovado no torneio");
-  if (inscricao.id_equipe) throw new Error("Usuário já possui equipe");
-  const equipeExistente = await Equipe.findOne({
-    where: {
-      nome,
-      id_torneio
-    }
-  });
 
+  const equipeJaExistente = await Equipe.findOne({
+    include: [{
+      model: Usuario,
+      as: "membros",
+      where: { id_usuario },
+      through: { attributes: [] }
+    }],
+    where: { id_torneio }
+  });
+  if (equipeJaExistente) throw new Error("Usuário já possui equipe neste torneio");
+
+  const equipeExistente = await Equipe.findOne({
+    where: { nome, id_torneio }
+  });
   if (equipeExistente) throw new Error("Já existe uma equipe com este nome neste torneio");
 
-  const equipe = await Equipe.create({
-    nome,
-    id_torneio
-  });
-
-  await EquipeUsuario.create({
-    id_equipe: equipe.id_equipe,
-    id_usuario
-  });
-
-  await inscricao.update({
-    id_equipe: equipe.id_equipe
-  });
+  const equipe = await Equipe.create({ nome, id_torneio });
+  await EquipeUsuario.create({ id_equipe: equipe.id_equipe, id_usuario });
 
   return {
     id_equipe: equipe.id_equipe,
@@ -45,39 +36,30 @@ export const createEquipeService = async (id_torneio, id_usuario, nome) => {
 
 export const entrarNaEquipeService = async (id_torneio, id_usuario, id_equipe) => {
   const inscricao = await Inscricao.findOne({
-    where: {
-      id_usuario,
-      id_torneio,
-      status: "APROVADA"
-    }
+    where: { id_usuario, id_torneio, status: "APROVADA" }
   });
   if (!inscricao) throw new Error("Usuário precisa estar aprovado no torneio");
-  if (inscricao.id_equipe) throw new Error("Usuário já possui equipe");
-  const equipe = await Equipe.findByPk(id_equipe,{
-    include:[
-      {
-        model: Usuario,
-        as: "membros",
-        attributes:["id_usuario"]
-      }
-    ]
+
+  const equipeJaExistente = await Equipe.findOne({
+    include: [{
+      model: Usuario,
+      as: "membros",
+      where: { id_usuario },
+      through: { attributes: [] }
+    }],
+    where: { id_torneio }
+  });
+  if (equipeJaExistente) throw new Error("Usuário já possui uma equipe neste torneio");
+
+  const equipe = await Equipe.findByPk(id_equipe, {
+    include: [{ model: Usuario, as: "membros", attributes: ["id_usuario"] }]
   });
   if (!equipe) throw new Error("Equipe não encontrada");
   if (equipe.id_torneio !== id_torneio) throw new Error("Equipe não pertence a este torneio");
   if (equipe.membros.length >= 2) throw new Error("Equipe já está cheia");
 
-  await EquipeUsuario.create({
-    id_equipe,
-    id_usuario
-  });
-
-  await inscricao.update({
-    id_equipe
-  });
-
-  return {
-    message: "Usuário entrou na equipe"
-  };
+  await EquipeUsuario.create({ id_equipe, id_usuario });
+  return { message: "Usuário entrou na equipe" };
 };
 
 export const sairDaEquipeService = async (id_torneio, id_usuario) => {

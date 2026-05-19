@@ -25,7 +25,8 @@ export const createEquipe = async (req, res) => {
 export const entrarNaEquipe = async (req, res) => {
   try {
     const { id_torneio } = req.params;
-    const { id_usuario, id_equipe } = req.body;
+    const { id_equipe } = req.body;
+    const id_usuario = req.user.id; 
 
     const result = await entrarNaEquipeService(id_torneio, id_usuario, id_equipe);
 
