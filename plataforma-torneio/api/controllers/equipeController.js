@@ -39,7 +39,7 @@ export const entrarNaEquipe = async (req, res) => {
 export const sairDaEquipe = async (req, res) => {
   try {
     const { id_torneio } = req.params;
-    const { id_usuario } = req.body;
+    const id_usuario = req.user.id;
 
     const result = await sairDaEquipeService(id_torneio, id_usuario);
 
