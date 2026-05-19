@@ -96,20 +96,6 @@ Equipe.belongsTo(Torneio, {
   onUpdate: "CASCADE",
 });
 
-Equipe.hasMany(Inscricao, {
-  foreignKey: "id_equipe",
-  as: "inscricoes_equipe",
-  onDelete: "SET NULL",
-  onUpdate: "CASCADE",
-});
-
-Inscricao.belongsTo(Equipe, {
-  foreignKey: "id_equipe",
-  as: "equipe_dupla",
-  onDelete: "SET NULL",
-  onUpdate: "CASCADE",
-});
-
 Usuario.hasOne(Ranking, {
   foreignKey: "id_usuario",
   as: "ranking",
