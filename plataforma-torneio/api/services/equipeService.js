@@ -104,21 +104,29 @@ export const sairDaEquipeService = async (id_torneio, id_usuario) => {
     throw new Error("Usuário não possui equipe neste torneio");
   }
 
-  const equipe = equipeUsuario.Equipe;
+  const equipeId = equipeUsuario.Equipe.id_equipe;
+
+  const equipe = await Equipe.findByPk(equipeId, {
+    include: [{
+      model: Usuario,
+      as: "membros",
+      attributes: ["id_usuario"],
+    }],
+  });
 
   await EquipeUsuario.destroy({
     where: {
       id_usuario,
-      id_equipe: equipe.id_equipe,
+      id_equipe: equipeId,
     },
   });
 
-  const restantes = equipe.membros
-    ? equipe.membros.map(m => m.id_usuario).filter(id => id !== id_usuario)
-    : [];
+  const outrosMembros = equipe.membros
+    .map(m => m.id_usuario)
+    .filter(id => id !== id_usuario);
 
   await notificarMembrosService(
-    restantes,
+    outrosMembros,
     "Membro saiu",
     "Um membro saiu da sua equipe",
     "EQUIPE"
@@ -131,27 +139,19 @@ export const sairDaEquipeService = async (id_torneio, id_usuario) => {
     "EQUIPE"
   );
 
-  const equipeAtualizada = await Equipe.findByPk(equipe.id_equipe, {
-    include: [
-      {
-        model: Usuario,
-        as: "membros",
-        attributes: ["id_usuario"],
-      },
-    ],
+  const equipeAtualizada = await Equipe.findByPk(equipeId, {
+    include: [{
+      model: Usuario,
+      as: "membros",
+      attributes: ["id_usuario"],
+    }],
   });
 
   if (!equipeAtualizada || equipeAtualizada.membros.length === 0) {
-    await Equipe.destroy({
-      where: {
-        id_equipe: equipe.id_equipe,
-      },
-    });
+    await Equipe.destroy({ where: { id_equipe: equipeId } });
   }
 
-  return {
-    message: "Usuário saiu da equipe",
-  };
+  return { message: "Usuário saiu da equipe" };
 };
 
 export const getAllEquipesService = async (id_torneio) => {
