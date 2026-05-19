@@ -93,31 +93,34 @@ export const entrarNaEquipeService = async (id_torneio, id_usuario, id_equipe) =
 export const sairDaEquipeService = async (id_torneio, id_usuario) => {
   const equipeUsuario = await EquipeUsuario.findOne({
     where: { id_usuario },
-    include: [{
-      model: Equipe,
-      where: { id_torneio },
-      required: true,
-    }],
   });
 
   if (!equipeUsuario) {
-    throw new Error("Usuário não possui equipe neste torneio");
+    throw new Error("Usuário não está em nenhuma equipe");
   }
 
-  const equipeId = equipeUsuario.Equipe.id_equipe;
-
-  const equipe = await Equipe.findByPk(equipeId, {
-    include: [{
-      model: Usuario,
-      as: "membros",
-      attributes: ["id_usuario"],
-    }],
+  const equipe = await Equipe.findByPk(equipeUsuario.id_equipe, {
+    include: [
+      {
+        model: Usuario,
+        as: "membros",
+        attributes: ["id_usuario"],
+      },
+    ],
   });
+
+  if (!equipe) {
+    throw new Error("Equipe não encontrada");
+  }
+
+  if (equipe.id_torneio !== id_torneio) {
+    throw new Error("Equipe não pertence a este torneio");
+  }
 
   await EquipeUsuario.destroy({
     where: {
       id_usuario,
-      id_equipe: equipeId,
+      id_equipe: equipe.id_equipe,
     },
   });
 
@@ -139,42 +142,25 @@ export const sairDaEquipeService = async (id_torneio, id_usuario) => {
     "EQUIPE"
   );
 
-  const equipeAtualizada = await Equipe.findByPk(equipeId, {
-    include: [{
-      model: Usuario,
-      as: "membros",
-      attributes: ["id_usuario"],
-    }],
-  });
-
-  if (!equipeAtualizada || equipeAtualizada.membros.length === 0) {
-    await Equipe.destroy({ where: { id_equipe: equipeId } });
-  }
-
-  return { message: "Usuário saiu da equipe" };
-};
-
-export const getAllEquipesService = async (id_torneio) => {
-  const equipes = await Equipe.findAll({
-    where: {
-      id_torneio
-    },
-    include:[
+  const equipeAtualizada = await Equipe.findByPk(equipe.id_equipe, {
+    include: [
       {
         model: Usuario,
         as: "membros",
-        attributes:["id_usuario","nome"],
-        through:{ attributes:[] }
-      }
-    ]
+        attributes: ["id_usuario"],
+      },
+    ],
   });
 
-  return equipes.map(e => ({
-    id_equipe: e.id_equipe,
-    nome: e.nome,
-    membros: e.membros,
-    completa: e.membros.length === 2
-  }));
+  if (!equipeAtualizada || equipeAtualizada.membros.length === 0) {
+    await Equipe.destroy({
+      where: {
+        id_equipe: equipe.id_equipe,
+      },
+    });
+  }
+
+  return { message: "Usuário saiu da equipe" };
 };
 
 export const getEquipeByIdService = async (id) => {
