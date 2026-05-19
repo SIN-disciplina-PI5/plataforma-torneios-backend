@@ -1,5 +1,6 @@
 import models from "../models/index.js";
 const { Equipe, EquipeUsuario, Inscricao, Torneio, Usuario } = models;
+import { notificarMembrosService } from "./notificacaoService.js";
 
 export const createEquipeService = async (id_torneio, id_usuario, nome) => {
   if (!nome) throw new Error("Nome da equipe é obrigatório");
@@ -28,6 +29,15 @@ export const createEquipeService = async (id_torneio, id_usuario, nome) => {
   const equipe = await Equipe.create({ nome, id_torneio });
   await EquipeUsuario.create({ id_equipe: equipe.id_equipe, id_usuario });
 
+  const usuarios = [id_usuario];
+
+  await notificarMembrosService(
+    usuarios,
+    "Equipe criada",
+    "Sua equipe foi criada com sucesso",
+    "EQUIPE"
+  );
+
   return {
     id_equipe: equipe.id_equipe,
     nome: equipe.nome
@@ -54,11 +64,29 @@ export const entrarNaEquipeService = async (id_torneio, id_usuario, id_equipe) =
   const equipe = await Equipe.findByPk(id_equipe, {
     include: [{ model: Usuario, as: "membros", attributes: ["id_usuario"] }]
   });
+
   if (!equipe) throw new Error("Equipe não encontrada");
   if (equipe.id_torneio !== id_torneio) throw new Error("Equipe não pertence a este torneio");
   if (equipe.membros.length >= 2) throw new Error("Equipe já está cheia");
 
   await EquipeUsuario.create({ id_equipe, id_usuario });
+
+  const membros = equipe.membros.map(m => m.id_usuario);
+
+  await notificarMembrosService(
+    membros,
+    "Novo membro",
+    "Um novo jogador entrou na sua equipe",
+    "EQUIPE"
+  );
+
+  await notificarMembrosService(
+    [id_usuario],
+    "Entrada confirmada",
+    "Você entrou em uma equipe",
+    "EQUIPE"
+  );
+
   return { message: "Usuário entrou na equipe" };
 };
 
@@ -80,10 +108,7 @@ export const sairDaEquipeService = async (id_torneio, id_usuario) => {
   });
 
   if (!equipe) throw new Error("Equipe não encontrada");
-
-  if (equipe.id_torneio !== id_torneio) {
-    throw new Error("Equipe não pertence a este torneio");
-  }
+  if (equipe.id_torneio !== id_torneio) throw new Error("Equipe não pertence a este torneio");
 
   await EquipeUsuario.destroy({
     where: {
@@ -91,6 +116,24 @@ export const sairDaEquipeService = async (id_torneio, id_usuario) => {
       id_equipe: equipe.id_equipe,
     },
   });
+
+  const restantes = equipe.membros
+    .map(m => m.id_usuario)
+    .filter(id => id !== id_usuario);
+
+  await notificarMembrosService(
+    restantes,
+    "Membro saiu",
+    "Um membro saiu da sua equipe",
+    "EQUIPE"
+  );
+
+  await notificarMembrosService(
+    [id_usuario],
+    "Saída confirmada",
+    "Você saiu da equipe",
+    "EQUIPE"
+  );
 
   const equipeAtualizada = await Equipe.findByPk(equipe.id_equipe, {
     include: [
@@ -114,7 +157,6 @@ export const sairDaEquipeService = async (id_torneio, id_usuario) => {
     message: "Usuário saiu da equipe",
   };
 };
-
 export const getAllEquipesService = async (id_torneio) => {
   const equipes = await Equipe.findAll({
     where: {

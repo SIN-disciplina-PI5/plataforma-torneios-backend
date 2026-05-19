@@ -1,5 +1,5 @@
 import "dotenv/config";
-import { Sequelize } from "sequelize";
+import { Sequelize, DataTypes } from "sequelize";
 import pg from "pg";
 
 import UsuarioModel from "./user.js";
@@ -11,17 +11,20 @@ import EquipeModel from "./equipe.js";
 import EquipeUsuarioModel from "./equipeUsuario.js";
 import RankingModel from "./ranking.js";
 import PartidaUsuarioModel from "./partidaUsuario.js";
+import NotificacaoModel from "./notificacao.js";
 
 const sequelize = new Sequelize(process.env.POSTGRES_URL, {
   dialect: "postgres",
   protocol: "postgres",
   dialectOptions:
-    process.env.NODE_ENV === "test" ? {} : {
-      ssl: {
-        require: true,
-        rejectUnauthorized: false
-      }
-    },
+    process.env.NODE_ENV === "test"
+      ? {}
+      : {
+          ssl: {
+            require: true,
+            rejectUnauthorized: false,
+          },
+        },
   dialectModule: pg,
   logging: false,
 });
@@ -35,6 +38,7 @@ const EquipeUsuario = EquipeUsuarioModel(sequelize);
 const Ranking = RankingModel(sequelize);
 const Partida = PartidaModel(sequelize);
 const PartidaUsuario = PartidaUsuarioModel(sequelize);
+const Notificacao = NotificacaoModel(sequelize, DataTypes);
 
 Usuario.belongsToMany(Equipe, {
   through: EquipeUsuario,
@@ -150,6 +154,20 @@ PartidaUsuario.belongsTo(Equipe, {
   onUpdate: "CASCADE",
 });
 
+Usuario.hasMany(Notificacao, {
+  foreignKey: "id_usuario",
+  as: "notificacoes",
+  onDelete: "CASCADE",
+  onUpdate: "CASCADE",
+});
+
+Notificacao.belongsTo(Usuario, {
+  foreignKey: "id_usuario",
+  as: "usuario",
+  onDelete: "CASCADE",
+  onUpdate: "CASCADE",
+});
+
 export default {
   Usuario,
   Torneio,
@@ -160,6 +178,7 @@ export default {
   Ranking,
   Partida,
   PartidaUsuario,
+  Notificacao,
 };
 
 export { sequelize };

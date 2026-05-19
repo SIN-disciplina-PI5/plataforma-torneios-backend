@@ -116,42 +116,57 @@ export const deleteTorneioService = async (id) => {
 export const gerarChaveService = async (id_torneio) => {
   const torneio = await Torneio.findByPk(id_torneio);
   if (!torneio) throw new Error("Torneio não encontrado");
-  if (new Date() > torneio.data_inicio) {
-    throw new Error("Não é possível gerar a chave após o início do torneio");
-  }
 
+  if (new Date() > torneio.data_inicio) throw new Error("Não é possível gerar a chave após o início do torneio");
   const partidasExistentes = await Partida.findOne({ where: { id_torneio } });
   if (partidasExistentes) throw new Error("A chave do torneio já foi gerada");
 
   const inscricoes = await Inscricao.findAll({
-    where: { id_torneio, status: "APROVADA" }
+    where: { id_torneio, status: "APROVADA" },
+    include: [
+      {
+        model: Equipe,
+        as: "equipe_dupla",
+        include: [
+          {
+            model: Usuario,
+            as: "membros",
+            attributes: ["id_usuario"],
+          },
+        ],
+      },
+    ],
   });
 
-  const equipes = inscricoes.map(i => i.id_equipe);
-  if (equipes.length < 2) throw new Error("Não há equipes suficientes para gerar chave");
+  const equipesBrutas = inscricoes
+    .map(i => i.equipe_dupla)
+    .filter(Boolean);
 
+  if (equipesBrutas.length < 2) throw new Error("Não há equipes suficientes para gerar chave");
+  let equipes = resolverEquipesSoltas(equipesBrutas);
   const tamanhosValidos = [4, 8, 16, 32];
-  if (!tamanhosValidos.includes(equipes.length)) throw new Error("Número de equipes inválido para torneio eliminatório");
-
+  if (!tamanhosValidos.includes(equipes.length)) throw new Error("Número inválido de equipes após resolução de solos");
   const embaralhadas = equipes.sort(() => Math.random() - 0.5);
   const partidasCriadas = [];
-
   for (let i = 0; i < embaralhadas.length; i += 2) {
     const partida = await Partida.create({
       id_torneio,
       fase: "OITAVAS_DE_FINAL",
-      status: "PENDENTE"
+      status: "PENDENTE",
     });
+
     await PartidaUsuario.bulkCreate([
-      { id_partida: partida.id_partida, id_equipe: embaralhadas[i] },
-      { id_partida: partida.id_partida, id_equipe: embaralhadas[i + 1] }
+      { id_partida: partida.id_partida, id_equipe: embaralhadas[i].id_equipe },
+      { id_partida: partida.id_partida, id_equipe: embaralhadas[i + 1].id_equipe },
     ]);
+
     partidasCriadas.push({
       id_partida: partida.id_partida,
       fase: partida.fase,
-      status: partida.status
+      status: partida.status,
     });
   }
+
   return partidasCriadas;
 };
 
@@ -212,4 +227,33 @@ export const atualizarStatusService = async (id_torneio, status) => {
     data_inicio: torneio.data_inicio,
     data_fim: torneio.data_fim,
   };
+};
+
+//função auxiliar
+const resolverEquipesSoltas = (equipes) => {
+  const full = equipes.filter(e => e.membros.length >= 2);
+  let solos = equipes.filter(e => e.membros.length === 1);
+
+  const result = [...full];
+
+  while (solos.length > 1) {
+    const e1 = solos.pop();
+    const e2 = solos.pop();
+
+    result.push({
+      id_equipe: e1.id_equipe,
+      membros: [...e1.membros, ...e2.membros],
+      nome: `${e1.nome} + ${e2.nome}`,
+    });
+  }
+
+  if (solos.length === 1) {
+    const lastSolo = solos[0];
+    const randomIndex = Math.floor(Math.random() * result.length);
+    const target = result[randomIndex];
+
+    target.membros.push(...lastSolo.membros);
+  }
+
+  return result.filter(e => e.membros.length >= 2);
 };
