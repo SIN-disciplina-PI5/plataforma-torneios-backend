@@ -63,56 +63,55 @@ export const entrarNaEquipeService = async (id_torneio, id_usuario, id_equipe) =
 };
 
 export const sairDaEquipeService = async (id_torneio, id_usuario) => {
-  const inscricao = await Inscricao.findOne({
-    where: {
-      id_usuario,
-      id_torneio
-    }
+  const equipeUsuario = await EquipeUsuario.findOne({
+    where: { id_usuario },
   });
-  if (!inscricao || !inscricao.id_equipe) throw new Error("Usuário não está em uma equipe");
-  const equipe = await Equipe.findByPk(inscricao.id_equipe,{
-    include:[
+
+  if (!equipeUsuario) throw new Error("Usuário não está em uma equipe");
+
+  const equipe = await Equipe.findByPk(equipeUsuario.id_equipe, {
+    include: [
       {
         model: Usuario,
         as: "membros",
-        attributes:["id_usuario"]
-      }
-    ]
+        attributes: ["id_usuario"],
+      },
+    ],
   });
 
   if (!equipe) throw new Error("Equipe não encontrada");
 
+  if (equipe.id_torneio !== id_torneio) {
+    throw new Error("Equipe não pertence a este torneio");
+  }
+
   await EquipeUsuario.destroy({
     where: {
       id_usuario,
-      id_equipe: equipe.id_equipe
-    }
+      id_equipe: equipe.id_equipe,
+    },
   });
 
-  await inscricao.update({
-    id_equipe: null
-  });
-
-  const equipeAtualizada = await Equipe.findByPk(equipe.id_equipe,{
-    include:[
+  const equipeAtualizada = await Equipe.findByPk(equipe.id_equipe, {
+    include: [
       {
         model: Usuario,
         as: "membros",
-        attributes:["id_usuario"]
-      }
-    ]
+        attributes: ["id_usuario"],
+      },
+    ],
   });
 
   if (!equipeAtualizada || equipeAtualizada.membros.length === 0) {
     await Equipe.destroy({
       where: {
-        id_equipe: equipe.id_equipe
-      }
+        id_equipe: equipe.id_equipe,
+      },
     });
   }
 
   return {
-    message: "Usuário saiu da equipe"
+    message: "Usuário saiu da equipe",
   };
 };
 
