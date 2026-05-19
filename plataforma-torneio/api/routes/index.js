@@ -8,6 +8,7 @@ import rankingRoute from "./rankingRoute.js";
 import partidaRoute from "./partidaRoute.js";
 import partidaUsuarioRoute from "./partidaUsuarioRoute.js";
 import resetPasswordRoute from "./resetPasswordRoute.js";
+import notificacaoRoutes from "./notificacaoRouter.js";
 
 const router = Router();
 
@@ -20,5 +21,6 @@ router.use("/ranking", rankingRoute);
 router.use("/partidas", partidaRoute);
 router.use("/partida-usuarios", partidaUsuarioRoute);
 router.use("/password", resetPasswordRoute);
+router.use("/notifications", notificacaoRoutes);
 
 export default router;
