@@ -18,7 +18,7 @@ export const listarNotificacoes = async (req, res) => {
 export const criarNotificacao = async (req, res) => {
   try {
     const { titulo, mensagem, tipo } = req.body;
-    const id_usuario = req.userId;
+    const id_usuario = req.user.id;
 
     const nova = await Notificacao.create({
       id_usuario,
@@ -36,7 +36,7 @@ export const criarNotificacao = async (req, res) => {
 export const marcarComoLida = async (req, res) => {
   try {
     const { id } = req.params;
-    const id_usuario = req.userId;
+    const id_usuario = req.user.id;
 
     const notificacao = await Notificacao.findOne({
       where: { id, id_usuario },
