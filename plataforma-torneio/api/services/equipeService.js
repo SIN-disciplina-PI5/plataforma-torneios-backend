@@ -91,6 +91,7 @@ export const entrarNaEquipeService = async (id_torneio, id_usuario, id_equipe) =
 };
 
 export const sairDaEquipeService = async (id_torneio, id_usuario) => {
+  // 1. Busca o vínculo sem include
   const equipeUsuario = await EquipeUsuario.findOne({
     where: { id_usuario },
   });
@@ -99,6 +100,7 @@ export const sairDaEquipeService = async (id_torneio, id_usuario) => {
     throw new Error("Usuário não está em nenhuma equipe");
   }
 
+  // 2. Busca a equipe correspondente e valida o torneio
   const equipe = await Equipe.findByPk(equipeUsuario.id_equipe, {
     include: [
       {
@@ -117,6 +119,7 @@ export const sairDaEquipeService = async (id_torneio, id_usuario) => {
     throw new Error("Equipe não pertence a este torneio");
   }
 
+  // 3. Remove o vínculo
   await EquipeUsuario.destroy({
     where: {
       id_usuario,
@@ -124,6 +127,7 @@ export const sairDaEquipeService = async (id_torneio, id_usuario) => {
     },
   });
 
+  // 4. Notifica os membros restantes
   const outrosMembros = equipe.membros
     .map(m => m.id_usuario)
     .filter(id => id !== id_usuario);
@@ -142,6 +146,7 @@ export const sairDaEquipeService = async (id_torneio, id_usuario) => {
     "EQUIPE"
   );
 
+  // 5. Se a equipe ficou vazia, deleta
   const equipeAtualizada = await Equipe.findByPk(equipe.id_equipe, {
     include: [
       {
@@ -161,6 +166,29 @@ export const sairDaEquipeService = async (id_torneio, id_usuario) => {
   }
 
   return { message: "Usuário saiu da equipe" };
+};
+
+export const getAllEquipesService = async (id_torneio) => {
+  const equipes = await Equipe.findAll({
+    where: {
+      id_torneio
+    },
+    include:[
+      {
+        model: Usuario,
+        as: "membros",
+        attributes:["id_usuario","nome"],
+        through:{ attributes:[] }
+      }
+    ]
+  });
+
+  return equipes.map(e => ({
+    id_equipe: e.id_equipe,
+    nome: e.nome,
+    membros: e.membros,
+    completa: e.membros.length === 2
+  }));
 };
 
 export const getEquipeByIdService = async (id) => {
