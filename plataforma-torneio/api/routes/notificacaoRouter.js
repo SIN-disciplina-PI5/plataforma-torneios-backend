@@ -4,9 +4,9 @@ import {
   criarNotificacao,
   marcarComoLida,
 } from "../controllers/notificacaoController.js";
-import { authenticateToken } from "../middlewares/authenticateToken.js"; 
-import { checkAdmin } from "../middlewares/checkAdmin.js";
+import { authenticateToken } from "../middlewares/authenticateToken.js";
 import { rateLimiter } from "../middlewares/rateLimiter.js";
+import checkAdmin from "../middlewares/checkAdmin.js";
 
 const router = express.Router();
 
