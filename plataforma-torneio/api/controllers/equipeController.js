@@ -11,7 +11,8 @@ import {
 export const createEquipe = async (req, res) => {
   try {
     const { id_torneio } = req.params;
-    const { id_usuario, nome } = req.body;
+    const { nome } = req.body;
+    const id_usuario = req.user.id;
 
     const equipe = await createEquipeService(id_torneio, id_usuario, nome);
 
