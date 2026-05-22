@@ -12,10 +12,20 @@ export default (sequelize, DataTypes) => {
     titulo: {
       type: DataTypes.STRING,
       allowNull: false,
+      validate: { notEmpty: true, notWhitespace(value) {
+        if (typeof value !== "string" || !value.trim()) {
+          throw new Error("Título não pode ser vazio");
+        }
+      } },
     },
     mensagem: {
       type: DataTypes.TEXT,
       allowNull: false,
+      validate: { notEmpty: true, notWhitespace(value) {
+        if (typeof value !== "string" || !value.trim()) {
+          throw new Error("Mensagem não pode ser vazia");
+        }
+      } },
     },
     lida: {
       type: DataTypes.BOOLEAN,
@@ -24,6 +34,11 @@ export default (sequelize, DataTypes) => {
     tipo: {
       type: DataTypes.STRING,
       allowNull: false,
+      validate: { notEmpty: true, notWhitespace(value) {
+        if (typeof value !== "string" || !value.trim()) {
+          throw new Error("Tipo não pode ser vazio");
+        }
+      } },
     },
   });
 

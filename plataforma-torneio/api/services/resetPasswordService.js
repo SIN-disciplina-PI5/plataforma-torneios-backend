@@ -1,7 +1,12 @@
 import models from "../models/index.js";
 import { sendResetPasswordEmail } from "./emailService.js";
+import crypto from "crypto";
 
 const { Usuario } = models;
+const RESET_PASSWORD_SUCCESS_MESSAGE = "Se o email estiver cadastrado, um codigo sera enviado";
+
+const hashResetToken = (token) =>
+  crypto.createHash("sha256").update(token).digest("hex");
 
 export const forgotPasswordService = async (email) => {
   if (!email)
@@ -11,14 +16,15 @@ export const forgotPasswordService = async (email) => {
     where: { email }
   });
 
-  if (!usuario)
-    throw new Error("Email não encontrado");
+  if (!usuario) {
+    return {
+      message: RESET_PASSWORD_SUCCESS_MESSAGE
+    };
+  }
 
-  const resetToken = Math.floor(
-    100000 + Math.random() * 900000
-  ).toString();
+  const resetToken = crypto.randomInt(100000, 1000000).toString();
 
-  usuario.reset_password_token = resetToken;
+  usuario.reset_password_token = hashResetToken(resetToken);
   usuario.reset_password_expires = new Date(Date.now() + 3600000);
 
   await usuario.save();
@@ -26,7 +32,7 @@ export const forgotPasswordService = async (email) => {
   await sendResetPasswordEmail(email, resetToken);
 
   return {
-    message: "Código enviado"
+    message: RESET_PASSWORD_SUCCESS_MESSAGE
   };
 };
 
@@ -39,7 +45,7 @@ export const resetPasswordService = async (token, novaSenha) => {
 
   const usuario = await Usuario.findOne({
     where: {
-      reset_password_token: token
+      reset_password_token: hashResetToken(token)
     }
   });
 

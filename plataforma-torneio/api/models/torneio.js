@@ -10,12 +10,20 @@ export default (sequelize) => {
     nome: {
       type: DataTypes.STRING,
       allowNull: false,
-      validate: { notEmpty: true },
+      validate: { notEmpty: true, notWhitespace(value) {
+        if (typeof value !== "string" || !value.trim()) {
+          throw new Error("Nome do torneio não pode ser vazio");
+        }
+      } },
     },
     categoria: {
       type: DataTypes.STRING,
       allowNull: false,
-      validate: { notEmpty: true },
+      validate: { notEmpty: true, notWhitespace(value) {
+        if (typeof value !== "string" || !value.trim()) {
+          throw new Error("Categoria não pode ser vazia");
+        }
+      } },
     },
     vagas: {
       type: DataTypes.INTEGER,

@@ -1,5 +1,8 @@
 import models, { sequelize } from "../models/index.js";
-const { Inscricao, Equipe, Torneio, Usuario } = models;
+const { Inscricao, Torneio, Usuario } = models;
+
+const podeAcessarInscricao = (inscricao, usuarioLogado = null) =>
+  usuarioLogado?.role === "ADMIN" || usuarioLogado?.id === inscricao.id_usuario;
 
 export const createInscricaoService = async (data) => {
   const { id_usuario, id_torneio } = data;
@@ -57,11 +60,6 @@ export const getAllInscricoesService = async () => {
         model: Torneio,
         as: "torneio",
         attributes: ["id_torneio", "nome", "categoria"]
-      },
-      {
-        model: Equipe,
-        as: "equipe_dupla",
-        attributes: ["id_equipe", "nome"]
       }
     ],
     order: [["data_inscricao", "DESC"]]
@@ -76,12 +74,12 @@ export const getAllInscricoesService = async () => {
     torneio: i.torneio
       ? { id: i.id_torneio, nome: i.torneio.nome, categoria: i.torneio.categoria }
       : { id: i.id_torneio },
-    dupla: i.equipe_dupla || null,
+    dupla: null,
     data_inscricao: i.data_inscricao,
   }));
 };
 
-export const getInscricaoByIdService = async (id) => {
+export const getInscricaoByIdService = async (id, usuarioLogado = null) => {
   const inscricao = await Inscricao.findByPk(id, {
     include: [
       {
@@ -93,30 +91,19 @@ export const getInscricaoByIdService = async (id) => {
         model: Torneio,
         as: "torneio",
         attributes: ["id_torneio", "nome", "categoria", "vagas"]
-      },
-      {
-        model: Equipe,
-        as: "equipe_dupla",
-        attributes: ["id_equipe", "nome"],
-        include: [
-          {
-            model: Usuario,
-            as: "membros",
-            attributes: ["id_usuario", "nome"]
-          }
-        ]
       }
     ]
   });
 
   if (!inscricao) throw new Error("Inscrição não encontrada");
+  if (!podeAcessarInscricao(inscricao, usuarioLogado)) throw new Error("Acesso negado");
 
   return {
     id_inscricao: inscricao.id_inscricao,
     status: inscricao.status,
     usuario: inscricao.usuario || { id: inscricao.id_usuario },
     torneio: inscricao.torneio || { id: inscricao.id_torneio },
-    dupla: inscricao.equipe_dupla || null,
+    dupla: null,
     data_inscricao: inscricao.data_inscricao,
   };
 };
@@ -165,10 +152,11 @@ export const updateInscricaoService = async (id, data) => {
   };
 };
 
-export const deleteInscricaoService = async (id) => {
+export const deleteInscricaoService = async (id, usuarioLogado = null) => {
   const inscricao = await Inscricao.findByPk(id);
 
   if (!inscricao) throw new Error("Inscrição não encontrada");
+  if (!podeAcessarInscricao(inscricao, usuarioLogado)) throw new Error("Acesso negado");
 
   await inscricao.destroy();
 
@@ -183,18 +171,6 @@ export const getInscricoesByTorneioService = async (id_torneio) => {
         model: Usuario,
         as: "usuario",
         attributes: ["id_usuario", "nome", "email", "patente"]
-      },
-      {
-        model: Equipe,
-        as: "equipe_dupla",
-        attributes: ["id_equipe", "nome"],
-        include: [
-          {
-            model: Usuario,
-            as: "membros",
-            attributes: ["id_usuario", "nome"]
-          }
-        ]
       }
     ],
     order: [["data_inscricao", "ASC"]]

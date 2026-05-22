@@ -41,10 +41,11 @@ export const getAllUsuarios = async (req, res) => {
 
 export const getUsuarioById = async (req, res) => {
   try {
-    const usuario = await getUsuarioByIdService(req.params.id_usuario);
+    const usuario = await getUsuarioByIdService(req.params.id_usuario, req.user);
     return res.status(200).json({ data: usuario });
   } catch (e) {
-    return res.status(404).json({ error: e.message });
+    const status = e.message === "Acesso negado" ? 403 : 404;
+    return res.status(status).json({ error: e.message });
   }
 };
 
@@ -62,9 +63,10 @@ export const updateUsuario = async (req, res) => {
 
 export const deleteUsuario = async (req, res) => {
   try {
-    await deleteUsuarioService(req.params.id_usuario);
+    await deleteUsuarioService(req.params.id_usuario, req.user);
     return res.status(204).send();
   } catch (e) {
-    return res.status(400).json({ error: e.message });
+    const status = e.message === "Acesso negado" ? 403 : 400;
+    return res.status(status).json({ error: e.message });
   }
 };

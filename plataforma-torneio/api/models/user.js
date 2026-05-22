@@ -11,18 +11,30 @@ export default (sequelize) => {
     nome: {
       type: DataTypes.STRING,
       allowNull: false,
-      validate: { notEmpty: true },
+      validate: { notEmpty: true, notWhitespace(value) {
+        if (typeof value !== "string" || !value.trim()) {
+          throw new Error("Nome não pode ser vazio");
+        }
+      } },
     },
     email: {
       type: DataTypes.STRING,
       allowNull: false,
       unique: true,
-      validate: { isEmail: true, notEmpty: true },
+      validate: { isEmail: true, notEmpty: true, notWhitespace(value) {
+        if (typeof value !== "string" || !value.trim()) {
+          throw new Error("Email não pode ser vazio");
+        }
+      } },
     },
     senha: {
       type: DataTypes.STRING,
       allowNull: false,
-      validate: { notEmpty: true },
+      validate: { notEmpty: true, notWhitespace(value) {
+        if (typeof value !== "string" || !value.trim()) {
+          throw new Error("Senha não pode ser vazia");
+        }
+      } },
     },
     patente: {
       type: DataTypes.STRING,

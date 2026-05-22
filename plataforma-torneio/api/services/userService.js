@@ -1,11 +1,14 @@
 import models from "../models/index.js";
+import { normalizarTextoObrigatorio, normalizarTextoOpcional } from "../utils/validation.js";
 const { Usuario, Ranking, EquipeUsuario, PartidaUsuario, Partida, Equipe, Torneio } = models;
 
+const podeAcessarUsuario = (id, usuarioLogado = null) =>
+  usuarioLogado?.role === "ADMIN" || usuarioLogado?.id === id;
+
 export const createUsuarioService = async (dados) => {
-  const { nome, email, senha } = dados;
-  if (!nome) throw new Error("Nome é obrigatório");
-  if (!email) throw new Error("Email é obrigatório");
-  if (!senha) throw new Error("Senha é obrigatória");
+  const nome = normalizarTextoObrigatorio(dados.nome, "Nome");
+  const email = normalizarTextoObrigatorio(dados.email, "Email").toLowerCase();
+  const senha = normalizarTextoObrigatorio(dados.senha, "Senha");
 
   const usuarioExistente = await Usuario.findOne({ where: { email } });
   if (usuarioExistente) throw new Error("Email já cadastrado");
@@ -33,7 +36,9 @@ export const getAllUsuariosService = async () => {
   return usuarios;
 };
 
-export const getUsuarioByIdService = async (id) => {
+export const getUsuarioByIdService = async (id, usuarioLogado = null) => {
+  if (!podeAcessarUsuario(id, usuarioLogado)) throw new Error("Acesso negado");
+
   const usuario = await Usuario.findByPk(id, {
     attributes: ["id_usuario", "nome", "email", "role", "patente"],
     include: [{ model: Ranking, as: "ranking", attributes: ["pontos_acumulados", "posicao_atual"] }]
@@ -51,6 +56,8 @@ export const getUsuarioByIdService = async (id) => {
 };
 
 export const updateUsuarioService = async (id, dados = {}, usuarioLogado = null) => {
+  if (!podeAcessarUsuario(id, usuarioLogado)) throw new Error("Acesso negado");
+
   const usuario = await Usuario.findByPk(id);
   if (!usuario) throw new Error("Usuário não encontrado");
   const camposPermitidos = ["nome", "email", "senha"];
@@ -71,6 +78,15 @@ export const updateUsuarioService = async (id, dados = {}, usuarioLogado = null)
       dadosFiltrados[campo] = dados[campo];
     }
   }
+  if (dadosFiltrados.nome !== undefined) {
+    dadosFiltrados.nome = normalizarTextoOpcional(dadosFiltrados.nome, "Nome");
+  }
+  if (dadosFiltrados.email !== undefined) {
+    dadosFiltrados.email = normalizarTextoOpcional(dadosFiltrados.email, "Email").toLowerCase();
+  }
+  if (dadosFiltrados.senha !== undefined) {
+    dadosFiltrados.senha = normalizarTextoOpcional(dadosFiltrados.senha, "Senha");
+  }
   await usuario.update(dadosFiltrados);
   return {
     id_usuario: usuario.id_usuario,
@@ -81,7 +97,9 @@ export const updateUsuarioService = async (id, dados = {}, usuarioLogado = null)
   }
 };
 
-export const deleteUsuarioService = async (id) => {
+export const deleteUsuarioService = async (id, usuarioLogado = null) => {
+  if (!podeAcessarUsuario(id, usuarioLogado)) throw new Error("Acesso negado");
+
   const usuario = await Usuario.findByPk(id);
   if (!usuario) throw new Error("Usuário não encontrado");
   await usuario.destroy();

@@ -1,9 +1,10 @@
 import models from "../models/index.js";
 const { Equipe, EquipeUsuario, Inscricao, Torneio, Usuario } = models;
 import { notificarMembrosService } from "./notificacaoService.js";
+import { normalizarTextoObrigatorio, normalizarTextoOpcional } from "../utils/validation.js";
 
 export const createEquipeService = async (id_torneio, id_usuario, nome) => {
-  if (!nome) throw new Error("Nome da equipe é obrigatório");
+  nome = normalizarTextoObrigatorio(nome, "Nome da equipe");
 
   const inscricao = await Inscricao.findOne({
     where: { id_usuario, id_torneio, status: "APROVADA" }
@@ -91,17 +92,8 @@ export const entrarNaEquipeService = async (id_torneio, id_usuario, id_equipe) =
 };
 
 export const sairDaEquipeService = async (id_torneio, id_usuario) => {
-  // 1. Busca o vínculo sem include
-  const equipeUsuario = await EquipeUsuario.findOne({
-    where: { id_usuario },
-  });
-
-  if (!equipeUsuario) {
-    throw new Error("Usuário não está em nenhuma equipe");
-  }
-
-  // 2. Busca a equipe correspondente e valida o torneio
-  const equipe = await Equipe.findByPk(equipeUsuario.id_equipe, {
+  const equipes = await Equipe.findAll({
+    where: { id_torneio },
     include: [
       {
         model: Usuario,
@@ -110,16 +102,12 @@ export const sairDaEquipeService = async (id_torneio, id_usuario) => {
       },
     ],
   });
+  const equipe = equipes.find(e => e.membros.some(m => m.id_usuario === id_usuario));
 
   if (!equipe) {
-    throw new Error("Equipe não encontrada");
+    throw new Error("Usuário não está em nenhuma equipe neste torneio");
   }
 
-  if (equipe.id_torneio !== id_torneio) {
-    throw new Error("Equipe não pertence a este torneio");
-  }
-
-  // 3. Remove o vínculo
   await EquipeUsuario.destroy({
     where: {
       id_usuario,
@@ -127,7 +115,6 @@ export const sairDaEquipeService = async (id_torneio, id_usuario) => {
     },
   });
 
-  // 4. Notifica os membros restantes
   const outrosMembros = equipe.membros
     .map(m => m.id_usuario)
     .filter(id => id !== id_usuario);
@@ -146,7 +133,6 @@ export const sairDaEquipeService = async (id_torneio, id_usuario) => {
     "EQUIPE"
   );
 
-  // 5. Se a equipe ficou vazia, deleta
   const equipeAtualizada = await Equipe.findByPk(equipe.id_equipe, {
     include: [
       {
@@ -216,13 +202,13 @@ export const updateEquipeService = async (id, data) => {
   const equipe = await Equipe.findByPk(id);
   if (!equipe) throw new Error("Equipe não encontrada");
   const dadosPermitidos = {};
-  if (data.nome)
-    dadosPermitidos.nome = data.nome;
+  if (data.nome !== undefined)
+    dadosPermitidos.nome = normalizarTextoOpcional(data.nome, "Nome da equipe");
 
-  if (data.nome && data.nome !== equipe.nome) {
+  if (dadosPermitidos.nome && dadosPermitidos.nome !== equipe.nome) {
     const equipeExistente = await Equipe.findOne({
       where: {
-        nome: data.nome,
+        nome: dadosPermitidos.nome,
         id_torneio: equipe.id_torneio
       }
     });

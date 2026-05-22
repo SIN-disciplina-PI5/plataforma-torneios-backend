@@ -1,11 +1,12 @@
 import models from "../models/index.js";
 import { Op } from "sequelize";
-const { Torneio, Inscricao, Partida, PartidaUsuario } = models;
+import { normalizarTextoObrigatorio, normalizarTextoOpcional } from "../utils/validation.js";
+const { Torneio, Inscricao, Partida, PartidaUsuario, Equipe, Usuario } = models;
 
 export const createTorneioService = async (dados) => {
-  const { nome, categoria, vagas, data_inicio, data_fim } = dados;
-  if (!nome) throw new Error("Nome do torneio é obrigatório");
-  if (!categoria) throw new Error("Categoria é obrigatória");
+  const nome = normalizarTextoObrigatorio(dados.nome, "Nome do torneio");
+  const categoria = normalizarTextoObrigatorio(dados.categoria, "Categoria");
+  const { vagas, data_inicio, data_fim } = dados;
   if (!vagas) throw new Error("Número de vagas é obrigatório");
   if (!data_inicio) throw new Error("Data de início é obrigatória");
   if (!data_fim) throw new Error("Data de fim é obrigatória");
@@ -73,6 +74,12 @@ export const getTorneioByIdService = async (id) => {
 export const updateTorneioService = async (id, dados) => {
   const torneio = await Torneio.findByPk(id);
   if (!torneio) throw new Error("Torneio não encontrado");
+  if (dados.nome !== undefined) {
+    dados.nome = normalizarTextoOpcional(dados.nome, "Nome do torneio");
+  }
+  if (dados.categoria !== undefined) {
+    dados.categoria = normalizarTextoOpcional(dados.categoria, "Categoria");
+  }
   if (dados.data_inicio || dados.data_fim) {
     const inicio = dados.data_inicio ? new Date(dados.data_inicio) : torneio.data_inicio;
     const fim = dados.data_fim ? new Date(dados.data_fim) : torneio.data_fim;
@@ -121,27 +128,27 @@ export const gerarChaveService = async (id_torneio) => {
   const partidasExistentes = await Partida.findOne({ where: { id_torneio } });
   if (partidasExistentes) throw new Error("A chave do torneio já foi gerada");
 
-  const inscricoes = await Inscricao.findAll({
-    where: { id_torneio, status: "APROVADA" },
+  const equipesBrutas = await Equipe.findAll({
+    where: { id_torneio },
     include: [
       {
-        model: Equipe,
-        as: "equipe_dupla",
+        model: Usuario,
+        as: "membros",
+        attributes: ["id_usuario"],
+        through: { attributes: [] },
+        required: true,
         include: [
           {
-            model: Usuario,
-            as: "membros",
-            attributes: ["id_usuario"],
+            model: Inscricao,
+            as: "inscricoes",
+            attributes: [],
+            where: { id_torneio, status: "APROVADA" },
+            required: true,
           },
         ],
       },
     ],
   });
-
-  const equipesBrutas = inscricoes
-    .map(i => i.equipe_dupla)
-    .filter(Boolean);
-
   if (equipesBrutas.length < 2) throw new Error("Não há equipes suficientes para gerar chave");
   let equipes = resolverEquipesSoltas(equipesBrutas);
   const tamanhosValidos = [4, 8, 16, 32];
