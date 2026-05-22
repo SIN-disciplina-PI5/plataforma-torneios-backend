@@ -7,9 +7,9 @@ export const createEquipeService = async (id_torneio, id_usuario, nome) => {
   nome = normalizarTextoObrigatorio(nome, "Nome da equipe");
 
   const inscricao = await Inscricao.findOne({
-    where: { id_usuario, id_torneio, status: "APROVADA" }
+    where: { id_usuario, id_torneio}
   });
-  if (!inscricao) throw new Error("Usuário precisa estar aprovado no torneio");
+  if (!inscricao) throw new Error("Usuário não está inscrito no torneio");
 
   const equipeJaExistente = await Equipe.findOne({
     include: [{
@@ -47,9 +47,9 @@ export const createEquipeService = async (id_torneio, id_usuario, nome) => {
 
 export const entrarNaEquipeService = async (id_torneio, id_usuario, id_equipe) => {
   const inscricao = await Inscricao.findOne({
-    where: { id_usuario, id_torneio, status: "APROVADA" }
+    where: { id_usuario, id_torneio }
   });
-  if (!inscricao) throw new Error("Usuário precisa estar aprovado no torneio");
+  if (!inscricao) throw new Error("Usuário não está inscrito no torneio");
 
   const equipeJaExistente = await Equipe.findOne({
     include: [{

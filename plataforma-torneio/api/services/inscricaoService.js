@@ -26,7 +26,7 @@ export const createInscricaoService = async (data) => {
   }
 
   const totalAprovadas = await Inscricao.count({
-    where: { id_torneio, status: "APROVADA" }
+    where: { id_torneio, status: true }
   });
 
   if (totalAprovadas >= torneio.vagas) {
@@ -36,7 +36,7 @@ export const createInscricaoService = async (data) => {
   const inscricao = await Inscricao.create({
     id_usuario,
     id_torneio,
-    status: "AGUARDANDO"
+    status: true,
   });
 
   return {
@@ -108,47 +108,36 @@ export const getInscricaoByIdService = async (id, usuarioLogado = null) => {
   };
 };
 
-export const updateInscricaoService = async (id, data) => {
-  const transaction = await sequelize.transaction();
-  const inscricao = await Inscricao.findByPk(id,{
-    transaction
-  });
-
-  if (!inscricao){
-    await transaction.rollback();
-    throw new Error("Inscrição não encontrada");
+export const updateInscricaoService = async (id, data, usuarioLogado) => {
+  if (usuarioLogado?.role !== "ADMIN") {
+    throw new Error("Apenas administradores podem atualizar inscrições");
   }
 
-  if (data.status === "APROVADA") {
-    const torneio = await Torneio.findByPk(
-      inscricao.id_torneio,
-      { transaction }
-    );
+  const inscricao = await Inscricao.findByPk(id);
+  if (!inscricao) throw new Error("Inscrição não encontrada");
 
-    const totalAprovadas = await Inscricao.count({
-      where:{
-        id_torneio: inscricao.id_torneio,
-        status: "APROVADA"
-      },
-      transaction
+  if (typeof data.status !== 'boolean') {
+    throw new Error("Status deve ser true (ativo) ou false (inativo)");
+  }
+
+  if (data.status === true && inscricao.status === false) {
+    const torneio = await Torneio.findByPk(inscricao.id_torneio);
+    const totalAtivas = await Inscricao.count({
+      where: { id_torneio: inscricao.id_torneio, status: true }
     });
-
-    if (totalAprovadas >= torneio.vagas){
-      await transaction.rollback();
-      throw new Error("Torneio lotado");
+    if (totalAtivas >= torneio.vagas) {
+      throw new Error("Não há vagas disponíveis para reativar esta inscrição");
     }
   }
 
-  await inscricao.update(
-    { status: data.status },
-    { transaction }
-  );
-  await transaction.commit();
+  await inscricao.update({ status: data.status });
+
   return {
     id_inscricao: inscricao.id_inscricao,
     id_usuario: inscricao.id_usuario,
     id_torneio: inscricao.id_torneio,
-    status: inscricao.status
+    status: inscricao.status,
+    mensagem: data.status ? "Inscrição reativada" : "Inscrição cancelada pelo administrador"
   };
 };
 

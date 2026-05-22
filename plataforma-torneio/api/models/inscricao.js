@@ -33,9 +33,9 @@ export default (sequelize) => {
       defaultValue: DataTypes.NOW,
     },
     status: {
-      type: DataTypes.ENUM("AGUARDANDO", "APROVADA", "REJEITADA"),
+      type: DataTypes.BOOLEAN,
       allowNull: false,
-      defaultValue: "AGUARDANDO",
+      defaultValue: true,
     },
   },
   {

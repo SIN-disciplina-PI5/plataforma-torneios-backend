@@ -142,7 +142,7 @@ export const gerarChaveService = async (id_torneio) => {
             model: Inscricao,
             as: "inscricoes",
             attributes: [],
-            where: { id_torneio, status: "APROVADA" },
+            where: { id_torneio, status: true },
             required: true,
           },
         ],
