@@ -320,7 +320,7 @@ export const adminRemoveMembroService = async (
   if (!equipe) throw new Error("Equipe não encontrada");
 
   const isMembro = equipe.membros.some(
-    m => m.id_usuario === Number(id_usuario)
+  m => m.id_usuario === id_usuario
   );
 
   if (!isMembro) throw new Error("Usuário não pertence a esta equipe");
@@ -334,7 +334,7 @@ export const adminRemoveMembroService = async (
 
   const outrosMembros = equipe.membros
     .map(m => m.id_usuario)
-    .filter(id => id !== Number(id_usuario));
+    .filter(id => id !== id_usuario);
 
   await notificarMembrosService(
     outrosMembros,
