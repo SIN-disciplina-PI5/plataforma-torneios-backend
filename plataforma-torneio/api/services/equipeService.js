@@ -231,3 +231,158 @@ export const deleteEquipeService = async (id) => {
     message: "Equipe deletada com sucesso"
   };
 };
+
+export const adminAddMembroService = async (id_equipe, id_usuario) => {
+  const equipe = await Equipe.findByPk(id_equipe, {
+    include: [
+      {
+        model: Usuario,
+        as: "membros",
+        attributes: ["id_usuario"]
+      }
+    ]
+  });
+
+  if (!equipe) throw new Error("Equipe não encontrada");
+  const usuario = await Usuario.findByPk(id_usuario);
+  if (!usuario) throw new Error("Usuário não encontrado");
+  
+  const inscricao = await Inscricao.findOne({
+    where: {
+      id_usuario,
+      id_torneio: equipe.id_torneio
+    }
+  });
+
+  if (!inscricao) throw new Error("Usuário não está inscrito neste torneio");
+
+  const equipeExistente = await Equipe.findOne({
+    include: [
+      {
+        model: Usuario,
+        as: "membros",
+        where: { id_usuario },
+        through: { attributes: [] }
+      }
+    ],
+    where: {
+      id_torneio: equipe.id_torneio
+    }
+  });
+
+  if (equipeExistente) throw new Error("Usuário já pertence a uma equipe neste torneio");
+  if (equipe.membros.length >= 2) throw new Error("Equipe já está cheia");
+
+  await EquipeUsuario.create({
+    id_equipe,
+    id_usuario
+  });
+
+  const membrosIds = equipe.membros.map(
+    m => m.id_usuario
+  );
+
+  await notificarMembrosService(
+    membrosIds,
+    "Novo membro adicionado pelo admin",
+    `O administrador adicionou ${usuario.nome} à equipe`,
+    "EQUIPE"
+  );
+
+  await notificarMembrosService(
+    [id_usuario],
+    "Você foi adicionado a uma equipe",
+    `O administrador o adicionou à equipe ${equipe.nome}`,
+    "EQUIPE"
+  );
+
+  return {
+    message: "Usuário adicionado à equipe com sucesso",
+    id_equipe,
+    id_usuario
+  };
+};
+
+export const adminRemoveMembroService = async (
+  id_equipe,
+  id_usuario
+) => {
+  const equipe = await Equipe.findByPk(id_equipe, {
+    include: [
+      {
+        model: Usuario,
+        as: "membros",
+        attributes: ["id_usuario"]
+      }
+    ]
+  });
+
+  if (!equipe) throw new Error("Equipe não encontrada");
+
+  const isMembro = equipe.membros.some(
+    m => m.id_usuario === Number(id_usuario)
+  );
+
+  if (!isMembro) throw new Error("Usuário não pertence a esta equipe");
+
+  await EquipeUsuario.destroy({
+    where: {
+      id_equipe,
+      id_usuario
+    }
+  });
+
+  const outrosMembros = equipe.membros
+    .map(m => m.id_usuario)
+    .filter(id => id !== Number(id_usuario));
+
+  await notificarMembrosService(
+    outrosMembros,
+    "Membro removido pelo admin",
+    "O administrador removeu um membro da equipe",
+    "EQUIPE"
+  );
+
+  await notificarMembrosService(
+    [id_usuario],
+    "Você foi removido de uma equipe",
+    `O administrador o removeu da equipe ${equipe.nome}`,
+    "EQUIPE"
+  );
+
+  const equipeAtualizada = await Equipe.findByPk(
+    id_equipe,
+    {
+      include: [
+        {
+          model: Usuario,
+          as: "membros",
+          attributes: ["id_usuario"]
+        }
+      ]
+    }
+  );
+
+  if (
+    !equipeAtualizada ||
+    equipeAtualizada.membros.length === 0
+  ) {
+    await Equipe.destroy({
+      where: {
+        id_equipe
+      }
+    });
+
+    return {
+      message:
+        "Usuário removido e equipe deletada pois ficou vazia"
+    };
+  }
+
+  return {
+    message:
+      "Usuário removido da equipe com sucesso",
+    id_equipe,
+    id_usuario
+  };
+};
