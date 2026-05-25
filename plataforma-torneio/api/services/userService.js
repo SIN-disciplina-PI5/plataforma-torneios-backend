@@ -1,5 +1,16 @@
 import models from "../models/index.js";
 import { normalizarTextoObrigatorio, normalizarTextoOpcional } from "../utils/validation.js";
+
+const validarSenhaForte = (senha) => {
+  const regex =
+    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&._-])[A-Za-z\d@$!%*?&._-]{8,}$/;
+
+  if (!regex.test(senha)) {
+    throw new Error(
+      "A senha deve ter no mínimo 8 caracteres, incluindo letra maiúscula, minúscula, número e caractere especial."
+    );
+  }
+};
 const { Usuario, Ranking, EquipeUsuario, PartidaUsuario, Partida, Equipe, Torneio } = models;
 
 const podeAcessarUsuario = (id, usuarioLogado = null) =>
@@ -10,13 +21,20 @@ export const createUsuarioService = async (dados) => {
   const email = normalizarTextoObrigatorio(dados.email, "Email").toLowerCase();
   const senha = normalizarTextoObrigatorio(dados.senha, "Senha");
 
+  validarSenhaForte(senha);
+
   const usuarioExistente = await Usuario.findOne({ where: { email } });
-  if (usuarioExistente) throw new Error("Email já cadastrado");
+
+  if (usuarioExistente) {
+    throw new Error("Email já cadastrado");
+  }
 
   const novoUsuario = await Usuario.create({
-    nome, email, senha,
+    nome,
+    email,
+    senha,
     role: "USER",
-    patente: "Iniciante"
+    patente: "Iniciante",
   });
 
   return {
@@ -85,8 +103,13 @@ export const updateUsuarioService = async (id, dados = {}, usuarioLogado = null)
     dadosFiltrados.email = normalizarTextoOpcional(dadosFiltrados.email, "Email").toLowerCase();
   }
   if (dadosFiltrados.senha !== undefined) {
-    dadosFiltrados.senha = normalizarTextoOpcional(dadosFiltrados.senha, "Senha");
-  }
+  dadosFiltrados.senha = normalizarTextoOpcional(
+    dadosFiltrados.senha,
+    "Senha"
+  );
+
+  validarSenhaForte(dadosFiltrados.senha);
+}
   await usuario.update(dadosFiltrados);
   return {
     id_usuario: usuario.id_usuario,
