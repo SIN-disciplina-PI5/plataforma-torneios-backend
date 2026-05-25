@@ -7,14 +7,23 @@ import {
   entrarNaEquipeService,
   sairDaEquipeService,
   adminAddMembroService,
-  adminRemoveMembroService
+  adminRemoveMembroService,
 } from "../services/equipeService.js";
 
 export const createEquipe = async (req, res) => {
   try {
     const { id_torneio } = req.params;
     const { nome } = req.body;
-    const id_usuario = req.user.id;
+
+    // ==========================================
+    // CORREÇÃO: Permite que o ADMIN crie a dupla para outro jogador
+    // Se for ADMIN e enviar id_usuario no body, usa o que o Front-end mandou.
+    // Se for jogador comum, usa o próprio ID dele (req.user.id).
+    // ==========================================
+    const id_usuario =
+      req.user.role === "ADMIN" && req.body.id_usuario
+        ? req.body.id_usuario
+        : req.user.id;
 
     const equipe = await createEquipeService(id_torneio, id_usuario, nome);
 
@@ -30,7 +39,11 @@ export const entrarNaEquipe = async (req, res) => {
     const { id_equipe } = req.body;
     const id_usuario = req.user.id;
 
-    const result = await entrarNaEquipeService(id_torneio, id_usuario, id_equipe);
+    const result = await entrarNaEquipeService(
+      id_torneio,
+      id_usuario,
+      id_equipe,
+    );
 
     res.status(200).json(result);
   } catch (error) {
@@ -99,7 +112,7 @@ export const adminAddMembro = async (req, res) => {
     res.status(200).json(result);
   } catch (error) {
     res.status(400).json({
-      error: error.message
+      error: error.message,
     });
   }
 };
@@ -112,7 +125,7 @@ export const adminRemoveMembro = async (req, res) => {
     res.status(200).json(result);
   } catch (error) {
     res.status(400).json({
-      error: error.message
+      error: error.message,
     });
   }
 };
