@@ -216,39 +216,72 @@ export const avancarFaseService = async (id_torneio, faseAtual) => {
       status: { [Op.ne]: "FINALIZADA" }
     }
   });
+
   if (partidasPendentes > 0) throw new Error("Ainda existem partidas não finalizadas nessa fase");
 
   const partidas = await Partida.findAll({
-    where: { id_torneio, fase: faseAtual, status: "FINALIZADA" }
+    where: {
+      id_torneio,
+      fase: faseAtual,
+      status: "FINALIZADA"
+    },
+    order: [["horario", "ASC"]]
   });
+
   const vencedores = partidas.map(p => p.vencedor_id);
+
   if (vencedores.length % 2 !== 0) throw new Error("Número inválido de vencedores");
+  
 
   const mapaFases = {
     "OITAVAS_DE_FINAL": "QUARTAS_DE_FINAL",
     "QUARTAS_DE_FINAL": "SEMI_FINAL",
     "SEMI_FINAL": "FINAL"
   };
-  const proximaFase = mapaFases[faseAtual];
-  if (!proximaFase) throw new Error("Fase final já concluída");
 
+  const proximaFase = mapaFases[faseAtual];
+
+  if (!proximaFase) throw new Error("Fase final já concluída");
+  
+  const ultimaPartida = await Partida.findOne({
+    where: { id_torneio },
+    order: [["horario", "DESC"]]
+  });
+
+  const horarioBase = ultimaPartida?.horario ? new Date(ultimaPartida.horario) : new Date();
+  const intervaloEntrePartidas = 60 * 60 * 1000;
   const novasPartidas = [];
+
   for (let i = 0; i < vencedores.length; i += 2) {
+
+    const horarioPartida = new Date(horarioBase.getTime() + intervaloEntrePartidas * ((i / 2) + 1));
+
     const partida = await Partida.create({
       id_torneio,
       fase: proximaFase,
-      status: "PENDENTE"
+      status: "PENDENTE",
+      horario: horarioPartida
     });
+
     await PartidaUsuario.bulkCreate([
-      { id_partida: partida.id_partida, id_equipe: vencedores[i] },
-      { id_partida: partida.id_partida, id_equipe: vencedores[i + 1] }
+      {
+        id_partida: partida.id_partida,
+        id_equipe: vencedores[i]
+      },
+      {
+        id_partida: partida.id_partida,
+        id_equipe: vencedores[i + 1]
+      }
     ]);
+
     novasPartidas.push({
       id_partida: partida.id_partida,
       fase: partida.fase,
-      status: partida.status
+      status: partida.status,
+      horario: partida.horario
     });
   }
+
   return novasPartidas;
 };
 
