@@ -3,6 +3,15 @@ import { Op } from "sequelize";
 import { normalizarTextoObrigatorio, normalizarTextoOpcional } from "../utils/validation.js";
 const { Torneio, Inscricao, Partida, PartidaUsuario, Equipe, Usuario } = models;
 
+const DURACAO_PARTIDA_MINUTOS = 30;
+
+// função auxiliar
+const calcularTempoMinimoTorneio = (vagas) => {
+  const totalPartidas = Number(vagas) - 1;
+
+  return totalPartidas * DURACAO_PARTIDA_MINUTOS;
+};
+
 export const createTorneioService = async (dados) => {
   const nome = normalizarTextoObrigatorio(dados.nome, "Nome do torneio");
   const categoria = normalizarTextoObrigatorio(dados.categoria, "Categoria");
@@ -13,13 +22,20 @@ export const createTorneioService = async (dados) => {
 
   const inicio = new Date(data_inicio);
   const fim = new Date(data_fim);
+
   if (isNaN(inicio) || isNaN(fim)) throw new Error("Datas inválidas");
   if (fim <= inicio) throw new Error("Data de fim deve ser posterior à data de início");
-
   const vagasValidas = [4, 8, 16, 32];
   if (!vagasValidas.includes(Number(vagas))) throw new Error("As vagas devem ser 4, 8, 16 ou 32");
+  const diferencaMinutos = (fim - inicio) / 60000;
+  const tempoMinimo = calcularTempoMinimoTorneio(vagas);
 
-  const torneioExistente = await Torneio.findOne({ where: { nome } });
+  if (diferencaMinutos < tempoMinimo) throw new Error(`O torneio precisa ter pelo menos ${tempoMinimo} minutos para ${vagas} equipes`);
+  
+  const torneioExistente = await Torneio.findOne({
+    where: { nome }
+  });
+
   if (torneioExistente) throw new Error("Já existe um torneio com este nome");
 
   const novoTorneio = await Torneio.create({
@@ -46,6 +62,7 @@ export const getAllTorneiosService = async () => {
   const torneios = await Torneio.findAll({
     order: [["nome", "ASC"]]
   });
+
   return torneios.map(t => ({
     id_torneio: t.id_torneio,
     nome: t.nome,
@@ -75,33 +92,52 @@ export const updateTorneioService = async (id, dados) => {
   const torneio = await Torneio.findByPk(id);
   if (!torneio) throw new Error("Torneio não encontrado");
   if (dados.nome !== undefined) {
-    dados.nome = normalizarTextoOpcional(dados.nome, "Nome do torneio");
+    dados.nome = normalizarTextoOpcional(
+      dados.nome,
+      "Nome do torneio"
+    );
   }
   if (dados.categoria !== undefined) {
-    dados.categoria = normalizarTextoOpcional(dados.categoria, "Categoria");
+    dados.categoria = normalizarTextoOpcional(
+      dados.categoria,
+      "Categoria"
+    );
   }
-  if (dados.data_inicio || dados.data_fim) {
+  const vagasFinais = dados.vagas ?? torneio.vagas;
+  if (
+    dados.data_inicio ||
+    dados.data_fim ||
+    dados.vagas
+  ) {
     const inicio = dados.data_inicio ? new Date(dados.data_inicio) : torneio.data_inicio;
     const fim = dados.data_fim ? new Date(dados.data_fim) : torneio.data_fim;
     if (isNaN(inicio) || isNaN(fim)) throw new Error("Datas inválidas");
     if (fim <= inicio) throw new Error("Data de fim deve ser posterior à data de início");
+
+    const diferencaMinutos = (fim - inicio) / 60000;
+    const tempoMinimo = calcularTempoMinimoTorneio(vagasFinais);
+
+    if (diferencaMinutos < tempoMinimo) throw new Error(`O torneio precisa ter pelo menos ${tempoMinimo} minutos para ${vagasFinais} equipes`);
+
     dados.data_inicio = inicio;
     dados.data_fim = fim;
   }
 
   if (dados.nome && dados.nome !== torneio.nome) {
-    const torneioExistente = await Torneio.findOne({ where: { nome: dados.nome } });
+    const torneioExistente = await Torneio.findOne({
+      where: { nome: dados.nome }
+    });
+
     if (torneioExistente) throw new Error("Já existe um torneio com este nome");
   }
 
   if (dados.vagas !== undefined) {
     const vagasValidas = [4, 8, 16, 32];
-    if (!vagasValidas.includes(Number(dados.vagas))) {
-      throw new Error("As vagas devem ser 4, 8, 16 ou 32");
-    }
+    if (!vagasValidas.includes(Number(dados.vagas))) throw new Error("As vagas devem ser 4, 8, 16 ou 32");
   }
 
   await torneio.update(dados);
+
   return {
     id_torneio: torneio.id_torneio,
     nome: torneio.nome,
@@ -163,7 +199,6 @@ export const gerarChaveService = async (id_torneio) => {
   if (!tamanhosValidos.includes(equipes.length)) throw new Error("Número inválido de equipes após resolução de solos");
   const embaralhadas = equipes.sort(() => Math.random() - 0.5);
   const partidasCriadas = [];
-  const DURACAO_PARTIDA_MINUTOS = 30;
   let horarioAtual = new Date(torneio.data_inicio);
   const totalPartidas = embaralhadas.length / 2;
 
@@ -266,8 +301,6 @@ export const avancarFaseService = async (
     where: { id_torneio },
     order: [["horario", "DESC"]]
   });
-
-  const DURACAO_PARTIDA_MINUTOS = 30;
 
   let horarioAtual = ultimaPartida?.horario
     ? new Date(
