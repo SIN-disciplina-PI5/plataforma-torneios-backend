@@ -1,6 +1,6 @@
 import models, { sequelize } from "../models/index.js";
 import { sairDaEquipeService } from "./equipeService.js";
-const { Inscricao, Torneio, Usuario } = models;
+const { Inscricao, Torneio, Usuario, Equipe } = models;
 
 const podeAcessarInscricao = (inscricao, usuarioLogado = null) =>
   usuarioLogado?.role === "ADMIN" || usuarioLogado?.id === inscricao.id_usuario;
