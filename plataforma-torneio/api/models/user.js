@@ -11,39 +11,53 @@ export default (sequelize) => {
     nome: {
       type: DataTypes.STRING,
       allowNull: false,
-      validate: { notEmpty: true, notWhitespace(value) {
-        if (typeof value !== "string" || !value.trim()) {
-          throw new Error("Nome não pode ser vazio");
-        }
-      } },
+      validate: {
+        notEmpty: true,
+        notWhitespace(value) {
+          if (typeof value !== "string" || !value.trim()) {
+            throw new Error("Nome não pode ser vazio");
+          }
+        },
+      },
     },
     email: {
       type: DataTypes.STRING,
       allowNull: false,
       unique: true,
-      validate: { isEmail: true, notEmpty: true, notWhitespace(value) {
-        if (typeof value !== "string" || !value.trim()) {
-          throw new Error("Email não pode ser vazio");
-        }
-      } },
+      validate: {
+        isEmail: true,
+        notEmpty: true,
+        notWhitespace(value) {
+          if (typeof value !== "string" || !value.trim()) {
+            throw new Error("Email não pode ser vazio");
+          }
+        },
+      },
     },
     senha: {
       type: DataTypes.STRING,
       allowNull: false,
-      validate: { notEmpty: true, notWhitespace(value) {
-        if (typeof value !== "string" || !value.trim()) {
-          throw new Error("Senha não pode ser vazia");
-        }
-      } },
+      validate: {
+        notEmpty: true,
+        notWhitespace(value) {
+          if (typeof value !== "string" || !value.trim()) {
+            throw new Error("Senha não pode ser vazia");
+          }
+        },
+      },
     },
     patente: {
       type: DataTypes.STRING,
-      allowNull: true, //por enquanto
+      allowNull: true,
     },
     role: {
       type: DataTypes.ENUM("ADMIN", "USER"),
       allowNull: false,
       validate: { notEmpty: true },
+    },
+    foto_perfil: {
+      type: DataTypes.TEXT,
+      allowNull: true,
     },
     reset_password_token: {
       type: DataTypes.STRING,
@@ -54,6 +68,7 @@ export default (sequelize) => {
       allowNull: true,
     },
   });
+
   Usuario.beforeCreate(async (usuario) => {
     usuario.senha = await bcrypt.hash(usuario.senha, 12);
     if (!usuario.role) {
@@ -62,9 +77,10 @@ export default (sequelize) => {
   });
 
   Usuario.beforeUpdate(async (usuario) => {
-    if (usuario.changed('senha')) {
+    if (usuario.changed("senha")) {
       usuario.senha = await bcrypt.hash(usuario.senha, 12);
     }
   });
+
   return Usuario;
 };
