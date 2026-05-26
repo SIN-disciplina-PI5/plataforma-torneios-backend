@@ -1,14 +1,16 @@
 import models from "../models/index.js";
-const { Partida, Torneio, Equipe, Usuario } = models;
+const { Partida, Torneio, Equipe, Usuario, PartidaUsuario } = models;
 import { atualizarPontuacaoService } from "./rankingService.js";
 
-//função auxiliar para validar horário 
+//função auxiliar para validar horário
 const validarHorarioNoTorneio = async (id_torneio, horario) => {
   const torneio = await Torneio.findByPk(id_torneio);
   if (!torneio) throw new Error("Torneio não encontrado");
   const dataHorario = new Date(horario);
   if (dataHorario < torneio.data_inicio || dataHorario > torneio.data_fim) {
-    throw new Error(`Horário da partida deve estar entre ${torneio.data_inicio} e ${torneio.data_fim}`);
+    throw new Error(
+      `Horário da partida deve estar entre ${torneio.data_inicio} e ${torneio.data_fim}`,
+    );
   }
   return true;
 };
@@ -27,10 +29,13 @@ export const createPartidaService = async (dados) => {
   }
 
   const novaPartida = await Partida.create({
-    id_torneio, fase, status, horario,
+    id_torneio,
+    fase,
+    status,
+    horario,
     placar: null,
     vencedor_id: null,
-    resultado: null
+    resultado: null,
   });
 
   return {
@@ -62,13 +67,13 @@ export const getPartidaByIdService = async (id) => {
                 model: Usuario,
                 as: "membros",
                 attributes: ["id_usuario", "nome"],
-                through: { attributes: [] }
-              }
-            ]
-          }
-        ]
-      }
-    ]
+                through: { attributes: [] },
+              },
+            ],
+          },
+        ],
+      },
+    ],
   });
 
   if (!partida) throw new Error("Partida não encontrada");
@@ -79,7 +84,7 @@ export const getPartidaByIdService = async (id) => {
     torneio: partida.Torneio
       ? {
           nome: partida.Torneio.nome,
-          categoria: partida.Torneio.categoria
+          categoria: partida.Torneio.categoria,
         }
       : null,
     fase: partida.fase,
@@ -92,8 +97,8 @@ export const getPartidaByIdService = async (id) => {
     equipes: partida.equipesPartida.map((ep) => ({
       id_equipe: ep.equipe.id_equipe,
       nome: ep.equipe.nome,
-      membros: ep.equipe.membros
-    }))
+      membros: ep.equipe.membros,
+    })),
   };
 };
 
@@ -103,7 +108,7 @@ export const getAllPartidasService = async (filtros = {}) => {
     include: [
       {
         model: Torneio,
-        attributes: ["nome"]
+        attributes: ["nome"],
       },
       {
         model: PartidaUsuario,
@@ -113,15 +118,15 @@ export const getAllPartidasService = async (filtros = {}) => {
           {
             model: Equipe,
             as: "equipe",
-            attributes: ["id_equipe", "nome"]
-          }
-        ]
-      }
+            attributes: ["id_equipe", "nome"],
+          },
+        ],
+      },
     ],
-    order: [["horario", "ASC"]]
+    order: [["horario", "ASC"]],
   });
 
-  return partidas.map(p => ({
+  return partidas.map((p) => ({
     id_partida: p.id_partida,
     torneio: p.Torneio ? p.Torneio.nome : null,
     fase: p.fase,
@@ -129,11 +134,11 @@ export const getAllPartidasService = async (filtros = {}) => {
     horario: p.horario,
     placar: p.placar,
 
-    equipes: p.equipesPartida.map(ep => ({
+    equipes: p.equipesPartida.map((ep) => ({
       id_equipe: ep.equipe.id_equipe,
       nome: ep.equipe.nome,
-      status_individual: ep.status_individual
-    }))
+      status_individual: ep.status_individual,
+    })),
   }));
 };
 
@@ -195,7 +200,7 @@ export const iniciarPartidaService = async (id) => {
 
   await partida.update({
     status: "EM_ANDAMENTO",
-    horario: partida.horario || agora
+    horario: partida.horario || agora,
   });
   return {
     id_partida: partida.id_partida,
@@ -214,36 +219,29 @@ export const finalizarPartidaService = async (id, dados) => {
     placar: placar || partida.placar,
     vencedor_id,
     resultado: resultado || partida.resultado,
-    status: "FINALIZADA"
+    status: "FINALIZADA",
   });
 
-  const equipeVencedora = await Equipe.findByPk(vencedor_id,{
-    include:[
+  const equipeVencedora = await Equipe.findByPk(vencedor_id, {
+    include: [
       {
         model: Usuario,
         as: "membros",
-        attributes:["id_usuario"]
-      }
-    ]
+        attributes: ["id_usuario"],
+      },
+    ],
   });
 
   if (!equipeVencedora) throw new Error("Equipe vencedora não encontrada");
   let tipoEvento = null;
-  if (partida.fase === "OITAVAS_DE_FINAL")
-    tipoEvento = "AVANCO_FASE";
-  if (partida.fase === "QUARTAS_DE_FINAL")
-    tipoEvento = "AVANCO_FASE";
-  if (partida.fase === "SEMI_FINAL")
-    tipoEvento = "FINALISTA";
-  if (partida.fase === "FINAL")
-    tipoEvento = "CAMPEAO";
+  if (partida.fase === "OITAVAS_DE_FINAL") tipoEvento = "AVANCO_FASE";
+  if (partida.fase === "QUARTAS_DE_FINAL") tipoEvento = "AVANCO_FASE";
+  if (partida.fase === "SEMI_FINAL") tipoEvento = "FINALISTA";
+  if (partida.fase === "FINAL") tipoEvento = "CAMPEAO";
 
-  if (tipoEvento){
-    for (const membro of equipeVencedora.membros){
-      await atualizarPontuacaoService(
-        membro.id_usuario,
-        tipoEvento
-      );
+  if (tipoEvento) {
+    for (const membro of equipeVencedora.membros) {
+      await atualizarPontuacaoService(membro.id_usuario, tipoEvento);
     }
   }
 
@@ -252,6 +250,6 @@ export const finalizarPartidaService = async (id, dados) => {
     status: partida.status,
     placar: partida.placar,
     vencedor_id: partida.vencedor_id,
-    resultado: partida.resultado
+    resultado: partida.resultado,
   };
 };
