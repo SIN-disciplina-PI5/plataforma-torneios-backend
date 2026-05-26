@@ -123,7 +123,6 @@ export const deleteTorneioService = async (id) => {
 export const gerarChaveService = async (id_torneio) => {
   const torneio = await Torneio.findByPk(id_torneio);
   if (!torneio) throw new Error("Torneio não encontrado");
-
   if (new Date() > torneio.data_inicio) throw new Error("Não é possível gerar a chave após o início do torneio");
 
   const partidasExistentes = await Partida.findOne({
@@ -146,44 +145,49 @@ export const gerarChaveService = async (id_torneio) => {
             model: Inscricao,
             as: "inscricoes",
             attributes: [],
-            where: { id_torneio, status: true },
-            required: true,
-          },
-        ],
-      },
-    ],
+            where: {
+              id_torneio,
+              status: true
+            },
+            required: true
+          }
+        ]
+      }
+    ]
   });
 
-  if (equipesBrutas.length < 2) {
-    throw new Error("Não há equipes suficientes para gerar chave");
-  }
-
+  if (equipesBrutas.length < 2) throw new Error("Não há equipes suficientes para gerar chave");
   let equipes = resolverEquipesSoltas(equipesBrutas);
-
   const tamanhosValidos = [4, 8, 16, 32];
 
   if (!tamanhosValidos.includes(equipes.length)) throw new Error("Número inválido de equipes após resolução de solos");
   const embaralhadas = equipes.sort(() => Math.random() - 0.5);
   const partidasCriadas = [];
+  const DURACAO_PARTIDA_MINUTOS = 30;
+  let horarioAtual = new Date(torneio.data_inicio);
+  const totalPartidas = embaralhadas.length / 2;
 
-  const inicioTorneio = new Date(torneio.data_inicio);
-  const fimTorneio = new Date(torneio.data_fim);
-  const quantidadePartidas = embaralhadas.length / 2;
-  const intervaloTotal = fimTorneio.getTime() - inicioTorneio.getTime();
-  const intervaloEntrePartidas = Math.floor(intervaloTotal / quantidadePartidas);
+  const ultimoHorario = new Date(
+    horarioAtual.getTime() +
+    (totalPartidas - 1) * DURACAO_PARTIDA_MINUTOS * 60000
+  );
+
+  if (ultimoHorario > torneio.data_fim) throw new Error("O intervalo do torneio é insuficiente para agendar as partidas");
+
+  let faseInicial = "OITAVAS_DE_FINAL";
+
+  if (equipes.length === 4)
+    faseInicial = "SEMI_FINAL";
+
+  if (equipes.length === 8)
+    faseInicial = "QUARTAS_DE_FINAL";
 
   for (let i = 0; i < embaralhadas.length; i += 2) {
-
-    const horarioPartida = new Date(
-      inicioTorneio.getTime() +
-      intervaloEntrePartidas * (i / 2)
-    );
-
     const partida = await Partida.create({
       id_torneio,
-      fase: "OITAVAS_DE_FINAL",
+      fase: faseInicial,
       status: "PENDENTE",
-      horario: horarioPartida
+      horario: new Date(horarioAtual)
     });
 
     await PartidaUsuario.bulkCreate([
@@ -194,7 +198,7 @@ export const gerarChaveService = async (id_torneio) => {
       {
         id_partida: partida.id_partida,
         id_equipe: embaralhadas[i + 1].id_equipe
-      },
+      }
     ]);
 
     partidasCriadas.push({
@@ -203,17 +207,27 @@ export const gerarChaveService = async (id_torneio) => {
       status: partida.status,
       horario: partida.horario
     });
+
+    horarioAtual = new Date(
+      horarioAtual.getTime() +
+      DURACAO_PARTIDA_MINUTOS * 60000
+    );
   }
 
   return partidasCriadas;
 };
 
-export const avancarFaseService = async (id_torneio, faseAtual) => {
+export const avancarFaseService = async (
+  id_torneio,
+  faseAtual
+) => {
   const partidasPendentes = await Partida.count({
     where: {
       id_torneio,
       fase: faseAtual,
-      status: { [Op.ne]: "FINALIZADA" }
+      status: {
+        [Op.ne]: "FINALIZADA"
+      }
     }
   });
 
@@ -228,39 +242,64 @@ export const avancarFaseService = async (id_torneio, faseAtual) => {
     order: [["horario", "ASC"]]
   });
 
-  const vencedores = partidas.map(p => p.vencedor_id);
+  const vencedores = partidas.map( p => p.vencedor_id );
 
   if (vencedores.length % 2 !== 0) throw new Error("Número inválido de vencedores");
-  
 
   const mapaFases = {
-    "OITAVAS_DE_FINAL": "QUARTAS_DE_FINAL",
-    "QUARTAS_DE_FINAL": "SEMI_FINAL",
-    "SEMI_FINAL": "FINAL"
+    OITAVAS_DE_FINAL: "QUARTAS_DE_FINAL",
+    QUARTAS_DE_FINAL: "SEMI_FINAL",
+    SEMI_FINAL: "FINAL"
   };
 
   const proximaFase = mapaFases[faseAtual];
 
   if (!proximaFase) throw new Error("Fase final já concluída");
-  
+
+  const torneio = await Torneio.findByPk(
+    id_torneio
+  );
+
+  if (!torneio) throw new Error("Torneio não encontrado");
+
   const ultimaPartida = await Partida.findOne({
     where: { id_torneio },
     order: [["horario", "DESC"]]
   });
 
-  const horarioBase = ultimaPartida?.horario ? new Date(ultimaPartida.horario) : new Date();
-  const intervaloEntrePartidas = 60 * 60 * 1000;
+  const DURACAO_PARTIDA_MINUTOS = 30;
+
+  let horarioAtual = ultimaPartida?.horario
+    ? new Date(
+        new Date(ultimaPartida.horario).getTime() +
+        DURACAO_PARTIDA_MINUTOS * 60000
+      )
+    : new Date(torneio.data_inicio);
+
+  const totalNovasPartidas =
+    vencedores.length / 2;
+
+  const ultimoHorario = new Date(
+    horarioAtual.getTime() +
+    (totalNovasPartidas - 1) *
+      DURACAO_PARTIDA_MINUTOS *
+      60000
+  );
+
+  if (ultimoHorario > torneio.data_fim) {
+    throw new Error(
+      "O intervalo do torneio é insuficiente para avançar a fase"
+    );
+  }
+
   const novasPartidas = [];
 
   for (let i = 0; i < vencedores.length; i += 2) {
-
-    const horarioPartida = new Date(horarioBase.getTime() + intervaloEntrePartidas * ((i / 2) + 1));
-
     const partida = await Partida.create({
       id_torneio,
       fase: proximaFase,
       status: "PENDENTE",
-      horario: horarioPartida
+      horario: new Date(horarioAtual)
     });
 
     await PartidaUsuario.bulkCreate([
@@ -280,6 +319,11 @@ export const avancarFaseService = async (id_torneio, faseAtual) => {
       status: partida.status,
       horario: partida.horario
     });
+
+    horarioAtual = new Date(
+      horarioAtual.getTime() +
+      DURACAO_PARTIDA_MINUTOS * 60000
+    );
   }
 
   return novasPartidas;
