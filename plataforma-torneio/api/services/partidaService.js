@@ -44,28 +44,83 @@ export const createPartidaService = async (dados) => {
 
 export const getPartidaByIdService = async (id) => {
   const partida = await Partida.findByPk(id, {
-    include: [{ model: Torneio, attributes: ["nome", "categoria"] }]
+    include: [
+      {
+        model: Torneio,
+        attributes: ["nome", "categoria"],
+      },
+      {
+        model: PartidaUsuario,
+        as: "equipesPartida",
+        include: [
+          {
+            model: Equipe,
+            as: "equipe",
+            attributes: ["id_equipe", "nome"],
+            include: [
+              {
+                model: Usuario,
+                as: "membros",
+                attributes: ["id_usuario", "nome"],
+                through: { attributes: [] }
+              }
+            ]
+          }
+        ]
+      }
+    ]
   });
+
   if (!partida) throw new Error("Partida não encontrada");
+
   return {
     id_partida: partida.id_partida,
     id_torneio: partida.id_torneio,
-    torneio: partida.Torneio ? partida.Torneio.nome : null,
+    torneio: partida.Torneio
+      ? {
+          nome: partida.Torneio.nome,
+          categoria: partida.Torneio.categoria
+        }
+      : null,
     fase: partida.fase,
     status: partida.status,
     horario: partida.horario,
     placar: partida.placar,
     vencedor_id: partida.vencedor_id,
     resultado: partida.resultado,
+
+    equipes: partida.equipesPartida.map((ep) => ({
+      id_equipe: ep.equipe.id_equipe,
+      nome: ep.equipe.nome,
+      membros: ep.equipe.membros
+    }))
   };
 };
 
 export const getAllPartidasService = async (filtros = {}) => {
   const partidas = await Partida.findAll({
     where: filtros,
-    include: [{ model: Torneio, attributes: ["nome"] }],
+    include: [
+      {
+        model: Torneio,
+        attributes: ["nome"]
+      },
+      {
+        model: PartidaUsuario,
+        as: "equipesPartida",
+        attributes: ["status_individual"],
+        include: [
+          {
+            model: Equipe,
+            as: "equipe",
+            attributes: ["id_equipe", "nome"]
+          }
+        ]
+      }
+    ],
     order: [["horario", "ASC"]]
   });
+
   return partidas.map(p => ({
     id_partida: p.id_partida,
     torneio: p.Torneio ? p.Torneio.nome : null,
@@ -73,6 +128,12 @@ export const getAllPartidasService = async (filtros = {}) => {
     status: p.status,
     horario: p.horario,
     placar: p.placar,
+
+    equipes: p.equipesPartida.map(ep => ({
+      id_equipe: ep.equipe.id_equipe,
+      nome: ep.equipe.nome,
+      status_individual: ep.status_individual
+    }))
   }));
 };
 
