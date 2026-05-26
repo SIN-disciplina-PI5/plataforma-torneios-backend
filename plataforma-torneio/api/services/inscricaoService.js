@@ -1,4 +1,5 @@
 import models, { sequelize } from "../models/index.js";
+import { sairDaEquipeService } from "./equipeService.js";
 const { Inscricao, Torneio, Usuario } = models;
 
 const podeAcessarInscricao = (inscricao, usuarioLogado = null) =>
@@ -146,6 +147,23 @@ export const deleteInscricaoService = async (id, usuarioLogado = null) => {
 
   if (!inscricao) throw new Error("Inscrição não encontrada");
   if (!podeAcessarInscricao(inscricao, usuarioLogado)) throw new Error("Acesso negado");
+
+  const equipe = await Equipe.findOne({
+    where: { id_torneio: inscricao.id_torneio },
+    include: [{
+      model: Usuario,
+      as: "membros",
+      where: { id_usuario: inscricao.id_usuario },
+      through: { attributes: [] }
+    }]
+  });
+
+  if (equipe) {
+    await sairDaEquipeService(
+      inscricao.id_torneio,
+      inscricao.id_usuario
+    );
+  }
 
   await inscricao.destroy();
 
