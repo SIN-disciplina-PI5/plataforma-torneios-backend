@@ -125,7 +125,11 @@ export const gerarChaveService = async (id_torneio) => {
   if (!torneio) throw new Error("Torneio não encontrado");
 
   if (new Date() > torneio.data_inicio) throw new Error("Não é possível gerar a chave após o início do torneio");
-  const partidasExistentes = await Partida.findOne({ where: { id_torneio } });
+
+  const partidasExistentes = await Partida.findOne({
+    where: { id_torneio }
+  });
+
   if (partidasExistentes) throw new Error("A chave do torneio já foi gerada");
 
   const equipesBrutas = await Equipe.findAll({
@@ -149,28 +153,55 @@ export const gerarChaveService = async (id_torneio) => {
       },
     ],
   });
-  if (equipesBrutas.length < 2) throw new Error("Não há equipes suficientes para gerar chave");
+
+  if (equipesBrutas.length < 2) {
+    throw new Error("Não há equipes suficientes para gerar chave");
+  }
+
   let equipes = resolverEquipesSoltas(equipesBrutas);
+
   const tamanhosValidos = [4, 8, 16, 32];
+
   if (!tamanhosValidos.includes(equipes.length)) throw new Error("Número inválido de equipes após resolução de solos");
   const embaralhadas = equipes.sort(() => Math.random() - 0.5);
   const partidasCriadas = [];
+
+  const inicioTorneio = new Date(torneio.data_inicio);
+  const fimTorneio = new Date(torneio.data_fim);
+  const quantidadePartidas = embaralhadas.length / 2;
+  const intervaloTotal = fimTorneio.getTime() - inicioTorneio.getTime();
+  const intervaloEntrePartidas = Math.floor(intervaloTotal / quantidadePartidas);
+
   for (let i = 0; i < embaralhadas.length; i += 2) {
+
+    const horarioPartida = new Date(
+      inicioTorneio.getTime() +
+      intervaloEntrePartidas * (i / 2)
+    );
+
     const partida = await Partida.create({
       id_torneio,
       fase: "OITAVAS_DE_FINAL",
       status: "PENDENTE",
+      horario: horarioPartida
     });
 
     await PartidaUsuario.bulkCreate([
-      { id_partida: partida.id_partida, id_equipe: embaralhadas[i].id_equipe },
-      { id_partida: partida.id_partida, id_equipe: embaralhadas[i + 1].id_equipe },
+      {
+        id_partida: partida.id_partida,
+        id_equipe: embaralhadas[i].id_equipe
+      },
+      {
+        id_partida: partida.id_partida,
+        id_equipe: embaralhadas[i + 1].id_equipe
+      },
     ]);
 
     partidasCriadas.push({
       id_partida: partida.id_partida,
       fase: partida.fase,
       status: partida.status,
+      horario: partida.horario
     });
   }
 
