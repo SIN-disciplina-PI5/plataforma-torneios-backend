@@ -6,13 +6,13 @@ const PATENTES = {
   50: "Amador",
   150: "Semi-Pro",
   300: "Profissional",
-  500: "Lenda da Arena"
+  500: "Lenda da Arena",
 };
 
 const REGRA_PONTOS = {
   AVANCO_FASE: 10,
   FINALISTA: 20,
-  CAMPEAO: 50
+  CAMPEAO: 50,
 };
 
 const buscarOuCriarRanking = async (id_usuario) => {
@@ -21,14 +21,16 @@ const buscarOuCriarRanking = async (id_usuario) => {
     ranking = await Ranking.create({
       id_usuario,
       pontos_acumulados: 0,
-      posicao_atual: null
+      posicao_atual: null,
     });
   }
   return ranking;
 };
 
 const definirPatente = (pontos) => {
-  const limites = Object.keys(PATENTES).map(Number).sort((a, b) => b - a);
+  const limites = Object.keys(PATENTES)
+    .map(Number)
+    .sort((a, b) => b - a);
   for (const limite of limites) {
     if (pontos >= limite) return PATENTES[limite];
   }
@@ -42,7 +44,9 @@ const atualizarPatenteUsuario = async (id_usuario, pontos) => {
 };
 
 const recalcularPosicoes = async () => {
-  const rankings = await Ranking.findAll({ order: [["pontos_acumulados", "DESC"]] });
+  const rankings = await Ranking.findAll({
+    order: [["pontos_acumulados", "DESC"]],
+  });
   for (let i = 0; i < rankings.length; i++) {
     await rankings[i].update({ posicao_atual: i + 1 });
   }
@@ -51,19 +55,28 @@ const recalcularPosicoes = async () => {
 
 export const getRankingGeralService = async (limite = 100) => {
   const rankings = await Ranking.findAll({
-    include: [{ model: Usuario, as: "usuario", attributes: ["id_usuario", "nome", "patente"] }],
+    include: [
+      {
+        model: Usuario,
+        as: "usuario",
+        attributes: ["id_usuario", "nome", "patente", "foto_perfil"],
+      },
+    ],
     order: [["pontos_acumulados", "DESC"]],
-    limit: limite
+    limit: limite,
   });
 
   return rankings.map((r, index) => ({
     posicao: r.posicao_atual || index + 1,
     pontos: r.pontos_acumulados,
-    usuario: r.usuario ? {
-      id: r.usuario.id_usuario,
-      nome: r.usuario.nome,
-      patente: r.usuario.patente,
-    } : { id: r.id_usuario },
+    usuario: r.usuario
+      ? {
+          id: r.usuario.id_usuario,
+          nome: r.usuario.nome,
+          patente: r.usuario.patente,
+          foto_perfil: r.usuario.foto_perfil,
+        }
+      : { id: r.id_usuario },
     ultima_atualizacao: r.ultima_atualizacao,
   }));
 };
@@ -71,7 +84,13 @@ export const getRankingGeralService = async (limite = 100) => {
 export const getRankingUsuarioService = async (id_usuario) => {
   const ranking = await Ranking.findOne({
     where: { id_usuario },
-    include: [{ model: Usuario, as: "usuario", attributes: ["id_usuario", "nome", "patente"] }]
+    include: [
+      {
+        model: Usuario,
+        as: "usuario",
+        attributes: ["id_usuario", "nome", "patente", "foto_perfil"],
+      },
+    ],
   });
 
   if (!ranking) return null;
@@ -79,11 +98,14 @@ export const getRankingUsuarioService = async (id_usuario) => {
   return {
     posicao: ranking.posicao_atual,
     pontos: ranking.pontos_acumulados,
-    usuario: ranking.usuario ? {
-      id: ranking.usuario.id_usuario,
-      nome: ranking.usuario.nome,
-      patente: ranking.usuario.patente,
-    } : null,
+    usuario: ranking.usuario
+      ? {
+          id: ranking.usuario.id_usuario,
+          nome: ranking.usuario.nome,
+          patente: ranking.usuario.patente,
+          foto_perfil: ranking.usuario.foto_perfil,
+        }
+      : null,
     ultima_atualizacao: ranking.ultima_atualizacao,
   };
 };
@@ -91,7 +113,13 @@ export const getRankingUsuarioService = async (id_usuario) => {
 export const getRankingByPosicaoService = async (posicao) => {
   const ranking = await Ranking.findOne({
     where: { posicao_atual: posicao },
-    include: [{ model: Usuario, as: "usuario", attributes: ["id_usuario", "nome", "patente"] }]
+    include: [
+      {
+        model: Usuario,
+        as: "usuario",
+        attributes: ["id_usuario", "nome", "patente", "foto_perfil"],
+      },
+    ],
   });
 
   if (!ranking) throw new Error("Nenhum usuário encontrado nesta posição");
@@ -99,11 +127,14 @@ export const getRankingByPosicaoService = async (posicao) => {
   return {
     posicao: ranking.posicao_atual,
     pontos: ranking.pontos_acumulados,
-    usuario: ranking.usuario ? {
-      id: ranking.usuario.id_usuario,
-      nome: ranking.usuario.nome,
-      patente: ranking.usuario.patente,
-    } : null,
+    usuario: ranking.usuario
+      ? {
+          id: ranking.usuario.id_usuario,
+          nome: ranking.usuario.nome,
+          patente: ranking.usuario.patente,
+          foto_perfil: ranking.usuario.foto_perfil,
+        }
+      : null,
   };
 };
 
@@ -120,7 +151,10 @@ export const atualizarPontuacaoService = async (id_usuario, tipoEvento) => {
 
   await recalcularPosicoes();
 
-  const novaPatente = await atualizarPatenteUsuario(id_usuario, ranking.pontos_acumulados);
+  const novaPatente = await atualizarPatenteUsuario(
+    id_usuario,
+    ranking.pontos_acumulados,
+  );
 
   return {
     id_usuario,
@@ -137,7 +171,7 @@ export const resetarRankingUsuarioService = async (id_usuario) => {
   await ranking.update({
     pontos_acumulados: 0,
     posicao_atual: null,
-    ultima_atualizacao: new Date()
+    ultima_atualizacao: new Date(),
   });
 
   await recalcularPosicoes();

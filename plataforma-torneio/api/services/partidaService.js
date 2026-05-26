@@ -2,7 +2,6 @@ import models from "../models/index.js";
 const { Partida, Torneio, Equipe, Usuario, PartidaUsuario } = models;
 import { atualizarPontuacaoService } from "./rankingService.js";
 
-//função auxiliar para validar horário
 const validarHorarioNoTorneio = async (id_torneio, horario) => {
   const torneio = await Torneio.findByPk(id_torneio);
   if (!torneio) throw new Error("Torneio não encontrado");
@@ -66,7 +65,7 @@ export const getPartidaByIdService = async (id) => {
               {
                 model: Usuario,
                 as: "membros",
-                attributes: ["id_usuario", "nome"],
+                attributes: ["id_usuario", "nome", "foto_perfil"],
                 through: { attributes: [] },
               },
             ],
