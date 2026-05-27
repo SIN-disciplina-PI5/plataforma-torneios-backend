@@ -7,19 +7,24 @@ import {
 
 const { Equipe, EquipeUsuario, Inscricao, Torneio, Usuario } = models;
 
-const buscarEquipeDoUsuarioNoTorneio = async (id_torneio, id_usuario, options = {}) =>
-  Equipe.findOne({
-    include: [
-      {
-        model: Usuario,
-        as: "membros",
-        where: { id_usuario },
-        through: { attributes: [] },
-      },
-    ],
+const buscarEquipeDoUsuarioNoTorneio = async (id_torneio, id_usuario, options = {}) => {
+  const includeOptions = {
+    model: Usuario,
+    as: "membros",
+    where: { id_usuario },
+    through: { attributes: [] },
+  };
+
+  if (options.lock) {
+    includeOptions.required = true;
+  }
+
+  return Equipe.findOne({
+    include: [includeOptions],
     where: { id_torneio },
     ...options,
   });
+};
 
 export const createEquipeService = async (id_torneio, id_usuario, nome) => {
   nome = normalizarTextoObrigatorio(nome, "Nome da equipe");
