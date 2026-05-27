@@ -1,8 +1,6 @@
-import jwt from "jsonwebtoken";
 import "dotenv/config";
-import models from "../models/index.js";
+import { verificarTokenService } from "../services/authService.js";
 
-const { Blacklist } = models;
 
 export const authenticateToken = async (req, res, next) => {
   try {
@@ -16,19 +14,13 @@ export const authenticateToken = async (req, res, next) => {
       return res.status(403).json({ error: "Formato de token inválido" });
     }
 
-    const blackListed = await Blacklist.findOne({ where: { token: accessToken } });
-    if (blackListed) {
-      return res.status(401).json({ error: "Não autorizado" });
-    }
-
-    jwt.verify(accessToken, process.env.MY_SECRET, (err, decoded) => {
-      if (err) {
-        return res.status(403).json({ error: "Token inválido" });
-      }
-      req.user = decoded;
-      return next();
-    });
+    const decoded = await verificarTokenService(accessToken);
+    req.user = decoded;
+    return next();
   } catch (e) {
+    if (e.message === "Token inválido" || e.message === "Token inválido ou expirado") {
+      return res.status(403).json({ error: "Token inválido" });
+    }
     return res.status(500).json({ error: e.message });
   }
 };
