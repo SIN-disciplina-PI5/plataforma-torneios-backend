@@ -1,5 +1,15 @@
 import models from "../models/index.js";
+
 const { PartidaUsuario, Partida, Equipe } = models;
+const FILTROS_PERMITIDOS = ["id_partida_usuario", "id_partida", "id_equipe", "status_individual"];
+
+const filtrarConsulta = (filtros = {}) => {
+  const where = {};
+  for (const campo of FILTROS_PERMITIDOS) {
+    if (filtros[campo] !== undefined) where[campo] = filtros[campo];
+  }
+  return where;
+};
 
 export const createPartidaUsuarioService = async (dados) => {
   const { id_partida, id_equipe } = dados;
@@ -11,9 +21,15 @@ export const createPartidaUsuarioService = async (dados) => {
 
   const equipe = await Equipe.findByPk(id_equipe);
   if (!equipe) throw new Error("Equipe não encontrada");
+  if (equipe.id_torneio !== partida.id_torneio) {
+    throw new Error("Equipe e partida devem pertencer ao mesmo torneio");
+  }
+
+  const totalEquipes = await PartidaUsuario.count({ where: { id_partida } });
+  if (totalEquipes >= 2) throw new Error("Partida já possui duas equipes");
 
   const vinculoExistente = await PartidaUsuario.findOne({
-    where: { id_partida, id_equipe }
+    where: { id_partida, id_equipe },
   });
   if (vinculoExistente) throw new Error("Equipe já vinculada a esta partida");
 
@@ -30,8 +46,8 @@ export const getPartidaUsuarioByIdService = async (id) => {
   const vinculo = await PartidaUsuario.findByPk(id, {
     include: [
       { model: Partida, as: "partida", attributes: ["fase", "status", "horario"] },
-      { model: Equipe, as: "equipe", attributes: ["nome"] }
-    ]
+      { model: Equipe, as: "equipe", attributes: ["nome"] },
+    ],
   });
   if (!vinculo) throw new Error("Vínculo não encontrado");
 
@@ -45,14 +61,14 @@ export const getPartidaUsuarioByIdService = async (id) => {
 
 export const getAllPartidasUsuarioService = async (filtros = {}) => {
   const vinculos = await PartidaUsuario.findAll({
-    where: filtros,
+    where: filtrarConsulta(filtros),
     include: [
       { model: Partida, as: "partida", attributes: ["fase", "status", "horario"] },
-      { model: Equipe, as: "equipe", attributes: ["nome"] }
-    ]
+      { model: Equipe, as: "equipe", attributes: ["nome"] },
+    ],
   });
 
-  return vinculos.map(v => ({
+  return vinculos.map((v) => ({
     id_partida_usuario: v.id_partida_usuario,
     partida: v.partida ? { id: v.id_partida, fase: v.partida.fase } : { id: v.id_partida },
     equipe: v.equipe ? { id: v.id_equipe, nome: v.equipe.nome } : { id: v.id_equipe },
@@ -63,7 +79,11 @@ export const getAllPartidasUsuarioService = async (filtros = {}) => {
 export const updatePartidaUsuarioService = async (id, dados) => {
   const vinculo = await PartidaUsuario.findByPk(id);
   if (!vinculo) throw new Error("Vínculo não encontrado");
-  await vinculo.update(dados);
+
+  const dadosPermitidos = {};
+  if (dados.status_individual !== undefined) dadosPermitidos.status_individual = dados.status_individual;
+
+  await vinculo.update(dadosPermitidos);
   return {
     id_partida_usuario: vinculo.id_partida_usuario,
     id_partida: vinculo.id_partida,

@@ -6,7 +6,7 @@ import {
   deleteTorneioService,
   gerarChaveService,
   avancarFaseService,
-  atualizarStatusService
+  atualizarStatusService,
 } from "../services/torneioService.js";
 
 export const createTorneio = async (req, res) => {
@@ -63,12 +63,10 @@ export const deleteTorneio = async (req, res) => {
 export const gerarChave = async (req, res) => {
   try {
     const partidas = await gerarChaveService(req.params.id_torneio);
-
     return res.status(201).json({
       message: "Chave do torneio gerada",
-      data: partidas
+      data: partidas,
     });
-
   } catch (e) {
     return res.status(400).json({ error: e.message });
   }
@@ -76,17 +74,11 @@ export const gerarChave = async (req, res) => {
 
 export const avancarFase = async (req, res) => {
   try {
-
-    const partidas = await avancarFaseService(
-      req.params.id_torneio,
-      req.body.fase
-    );
-
+    const partidas = await avancarFaseService(req.params.id_torneio, req.body.fase);
     return res.status(200).json({
       message: "Fase avançada com sucesso",
-      data: partidas
+      data: partidas,
     });
-
   } catch (e) {
     return res.status(400).json({ error: e.message });
   }
@@ -94,17 +86,11 @@ export const avancarFase = async (req, res) => {
 
 export const atualizarStatusTorneio = async (req, res) => {
   try {
-
-    const torneio = await atualizarStatusService(
-      req.params.id_torneio,
-      req.body.status
-    );
-
+    const torneio = await atualizarStatusService(req.params.id_torneio, req.body.status);
     return res.status(200).json({
       message: "Status atualizado",
-      data: torneio
+      data: torneio,
     });
-
   } catch (e) {
     return res.status(400).json({ error: e.message });
   }

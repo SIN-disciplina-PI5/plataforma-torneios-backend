@@ -1,4 +1,6 @@
 import models from "../models/index.js";
+import { criarNotificacaoService } from "../services/notificacaoService.js";
+
 const { Notificacao } = models;
 
 export const listarNotificacoes = async (req, res) => {
@@ -17,15 +19,7 @@ export const listarNotificacoes = async (req, res) => {
 
 export const criarNotificacao = async (req, res) => {
   try {
-    const { titulo, mensagem, tipo } = req.body;
-    const id_usuario = req.user.id;
-
-    const nova = await Notificacao.create({
-      id_usuario,
-      titulo,
-      mensagem,
-      tipo,
-    });
+    const nova = await criarNotificacaoService(req.body);
     res.status(201).json(nova);
   } catch (error) {
     console.error(error);
@@ -39,7 +33,7 @@ export const marcarComoLida = async (req, res) => {
     const id_usuario = req.user.id;
 
     const notificacao = await Notificacao.findOne({
-      where: { id, id_usuario },
+      where: { id_notificacao: id, id_usuario },
     });
 
     if (!notificacao) {

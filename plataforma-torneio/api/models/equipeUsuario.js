@@ -26,6 +26,12 @@ export default (sequelize) => {
     },
     {
       tableName: "EquipeUsuarios",
+      indexes: [
+        {
+          unique: true,
+          fields: ["id_equipe", "id_usuario"],
+        },
+      ],
     }
   );
 };

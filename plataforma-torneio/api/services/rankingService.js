@@ -15,14 +15,14 @@ const REGRA_PONTOS = {
   CAMPEAO: 50,
 };
 
-const buscarOuCriarRanking = async (id_usuario) => {
-  let ranking = await Ranking.findOne({ where: { id_usuario } });
+const buscarOuCriarRanking = async (id_usuario, options = {}) => {
+  let ranking = await Ranking.findOne({ where: { id_usuario }, ...options });
   if (!ranking) {
     ranking = await Ranking.create({
       id_usuario,
       pontos_acumulados: 0,
       posicao_atual: null,
-    });
+    }, options);
   }
   return ranking;
 };
@@ -37,18 +37,19 @@ const definirPatente = (pontos) => {
   return "Iniciante";
 };
 
-const atualizarPatenteUsuario = async (id_usuario, pontos) => {
+const atualizarPatenteUsuario = async (id_usuario, pontos, options = {}) => {
   const patente = definirPatente(pontos);
-  await Usuario.update({ patente }, { where: { id_usuario } });
+  await Usuario.update({ patente }, { where: { id_usuario }, ...options });
   return patente;
 };
 
-const recalcularPosicoes = async () => {
+const recalcularPosicoes = async (options = {}) => {
   const rankings = await Ranking.findAll({
     order: [["pontos_acumulados", "DESC"]],
+    ...options,
   });
   for (let i = 0; i < rankings.length; i++) {
-    await rankings[i].update({ posicao_atual: i + 1 });
+    await rankings[i].update({ posicao_atual: i + 1 }, options);
   }
   return rankings;
 };
@@ -138,22 +139,23 @@ export const getRankingByPosicaoService = async (posicao) => {
   };
 };
 
-export const atualizarPontuacaoService = async (id_usuario, tipoEvento) => {
+export const atualizarPontuacaoService = async (id_usuario, tipoEvento, options = {}) => {
   const pontos = REGRA_PONTOS[tipoEvento];
   if (!pontos) throw new Error("Tipo de evento inválido");
 
-  const ranking = await buscarOuCriarRanking(id_usuario);
-  ranking.pontos_acumulados += pontos;
-  ranking.ultima_atualizacao = new Date();
-  await ranking.save();
-  await ranking.reload();
-  await ranking.save();
+  const ranking = await buscarOuCriarRanking(id_usuario, options);
+  await ranking.increment("pontos_acumulados", { by: pontos, ...options });
+  await ranking.reload(options);
+  await ranking.update({ ultima_atualizacao: new Date() }, options);
+  await ranking.reload(options);
 
-  await recalcularPosicoes();
+  await recalcularPosicoes(options);
+  await ranking.reload(options);
 
   const novaPatente = await atualizarPatenteUsuario(
     id_usuario,
     ranking.pontos_acumulados,
+    options,
   );
 
   return {

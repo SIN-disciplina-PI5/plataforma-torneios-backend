@@ -1,10 +1,10 @@
-import { 
+import {
   createInscricaoService,
   getAllInscricoesService,
   getInscricaoByIdService,
   updateInscricaoService,
   deleteInscricaoService,
-  getInscricoesByTorneioService
+  getInscricoesByTorneioService,
 } from "../services/inscricaoService.js";
 
 export const createInscricao = async (req, res) => {
@@ -43,7 +43,7 @@ export const getInscricaoById = async (req, res) => {
 export const updateInscricao = async (req, res) => {
   try {
     const { id_inscricao } = req.params;
-    const inscricao = await updateInscricaoService(id_inscricao, req.body);
+    const inscricao = await updateInscricaoService(id_inscricao, req.body, req.user);
     res.status(200).json(inscricao);
   } catch (error) {
     res.status(400).json({ error: error.message });

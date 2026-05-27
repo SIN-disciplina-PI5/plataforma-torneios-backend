@@ -1,4 +1,5 @@
 import { Router } from "express";
+import docsRoute from "./docsRoute.js";
 import userRoute from "./userRoute.js";
 import torneioRoute from "./torneioRoute.js";
 import inscricaoRoute from "./inscricaoRoute.js";
@@ -12,6 +13,7 @@ import notificacaoRoutes from "./notificacaoRouter.js";
 
 const router = Router();
 
+router.use("/docs", docsRoute);
 router.use("/users", userRoute);
 router.use("/torneio", torneioRoute);
 router.use("/inscricoes", inscricaoRoute);

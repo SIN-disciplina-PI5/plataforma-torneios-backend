@@ -1,5 +1,6 @@
 import models, { sequelize } from "../models/index.js";
 import { sairDaEquipeService } from "./equipeService.js";
+
 const { Inscricao, Torneio, Usuario, Equipe } = models;
 
 const podeAcessarInscricao = (inscricao, usuarioLogado = null) =>
@@ -11,43 +12,60 @@ export const createInscricaoService = async (data) => {
   if (!id_usuario) throw new Error("ID do usuário é obrigatório");
   if (!id_torneio) throw new Error("ID do torneio é obrigatório");
 
-  const usuario = await Usuario.findByPk(id_usuario);
-  if (!usuario) throw new Error("Usuário não encontrado");
+  const transaction = await sequelize.transaction();
 
-  const torneio = await Torneio.findByPk(id_torneio);
-  if (!torneio) throw new Error("Torneio não encontrado");
-  if (!torneio.status)
-    throw new Error("Torneio não está ativo para inscrições");
+  try {
+    const usuario = await Usuario.findByPk(id_usuario, { transaction });
+    if (!usuario) throw new Error("Usuário não encontrado");
 
-  const inscricaoExistente = await Inscricao.findOne({
-    where: { id_usuario, id_torneio },
-  });
+    const torneio = await Torneio.findByPk(id_torneio, {
+      transaction,
+      lock: transaction.LOCK.UPDATE,
+    });
+    if (!torneio) throw new Error("Torneio não encontrado");
+    if (!torneio.status) throw new Error("Torneio não está ativo para inscrições");
 
-  if (inscricaoExistente) {
-    throw new Error("Usuário já está inscrito neste torneio");
+    const inscricaoExistente = await Inscricao.findOne({
+      where: { id_usuario, id_torneio },
+      transaction,
+      lock: transaction.LOCK.UPDATE,
+    });
+
+    if (inscricaoExistente) {
+      throw new Error("Usuário já está inscrito neste torneio");
+    }
+
+    const totalAprovadas = await Inscricao.count({
+      where: { id_torneio, status: true },
+      transaction,
+    });
+
+    if (totalAprovadas >= torneio.vagas) {
+      throw new Error("Torneio está com todas as vagas preenchidas");
+    }
+
+    const inscricao = await Inscricao.create(
+      {
+        id_usuario,
+        id_torneio,
+        status: true,
+      },
+      { transaction },
+    );
+
+    await transaction.commit();
+
+    return {
+      id_inscricao: inscricao.id_inscricao,
+      id_usuario: inscricao.id_usuario,
+      id_torneio: inscricao.id_torneio,
+      status: inscricao.status,
+      data_inscricao: inscricao.data_inscricao,
+    };
+  } catch (error) {
+    await transaction.rollback();
+    throw error;
   }
-
-  const totalAprovadas = await Inscricao.count({
-    where: { id_torneio, status: true },
-  });
-
-  if (totalAprovadas >= torneio.vagas) {
-    throw new Error("Torneio está com todas as vagas preenchidas");
-  }
-
-  const inscricao = await Inscricao.create({
-    id_usuario,
-    id_torneio,
-    status: true,
-  });
-
-  return {
-    id_inscricao: inscricao.id_inscricao,
-    id_usuario: inscricao.id_usuario,
-    id_torneio: inscricao.id_torneio,
-    status: inscricao.status,
-    data_inscricao: inscricao.data_inscricao,
-  };
 };
 
 export const getAllInscricoesService = async () => {
@@ -107,8 +125,7 @@ export const getInscricaoByIdService = async (id, usuarioLogado = null) => {
   });
 
   if (!inscricao) throw new Error("Inscrição não encontrada");
-  if (!podeAcessarInscricao(inscricao, usuarioLogado))
-    throw new Error("Acesso negado");
+  if (!podeAcessarInscricao(inscricao, usuarioLogado)) throw new Error("Acesso negado");
 
   return {
     id_inscricao: inscricao.id_inscricao,
@@ -125,42 +142,56 @@ export const updateInscricaoService = async (id, data, usuarioLogado) => {
     throw new Error("Apenas administradores podem atualizar inscrições");
   }
 
-  const inscricao = await Inscricao.findByPk(id);
-  if (!inscricao) throw new Error("Inscrição não encontrada");
+  const transaction = await sequelize.transaction();
 
-  if (typeof data.status !== "boolean") {
-    throw new Error("Status deve ser true (ativo) ou false (inativo)");
-  }
-
-  if (data.status === true && inscricao.status === false) {
-    const torneio = await Torneio.findByPk(inscricao.id_torneio);
-    const totalAtivas = await Inscricao.count({
-      where: { id_torneio: inscricao.id_torneio, status: true },
+  try {
+    const inscricao = await Inscricao.findByPk(id, {
+      transaction,
+      lock: transaction.LOCK.UPDATE,
     });
-    if (totalAtivas >= torneio.vagas) {
-      throw new Error("Não há vagas disponíveis para reativar esta inscrição");
+    if (!inscricao) throw new Error("Inscrição não encontrada");
+
+    if (typeof data.status !== "boolean") {
+      throw new Error("Status deve ser true (ativo) ou false (inativo)");
     }
+
+    if (data.status === true && inscricao.status === false) {
+      const torneio = await Torneio.findByPk(inscricao.id_torneio, {
+        transaction,
+        lock: transaction.LOCK.UPDATE,
+      });
+      const totalAtivas = await Inscricao.count({
+        where: { id_torneio: inscricao.id_torneio, status: true },
+        transaction,
+      });
+      if (totalAtivas >= torneio.vagas) {
+        throw new Error("Não há vagas disponíveis para reativar esta inscrição");
+      }
+    }
+
+    await inscricao.update({ status: data.status }, { transaction });
+    await transaction.commit();
+
+    return {
+      id_inscricao: inscricao.id_inscricao,
+      id_usuario: inscricao.id_usuario,
+      id_torneio: inscricao.id_torneio,
+      status: inscricao.status,
+      mensagem: data.status
+        ? "Inscrição reativada"
+        : "Inscrição cancelada pelo administrador",
+    };
+  } catch (error) {
+    await transaction.rollback();
+    throw error;
   }
-
-  await inscricao.update({ status: data.status });
-
-  return {
-    id_inscricao: inscricao.id_inscricao,
-    id_usuario: inscricao.id_usuario,
-    id_torneio: inscricao.id_torneio,
-    status: inscricao.status,
-    mensagem: data.status
-      ? "Inscrição reativada"
-      : "Inscrição cancelada pelo administrador",
-  };
 };
 
 export const deleteInscricaoService = async (id, usuarioLogado = null) => {
   const inscricao = await Inscricao.findByPk(id);
 
   if (!inscricao) throw new Error("Inscrição não encontrada");
-  if (!podeAcessarInscricao(inscricao, usuarioLogado))
-    throw new Error("Acesso negado");
+  if (!podeAcessarInscricao(inscricao, usuarioLogado)) throw new Error("Acesso negado");
 
   const equipe = await Equipe.findOne({
     where: { id_torneio: inscricao.id_torneio },

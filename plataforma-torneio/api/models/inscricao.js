@@ -40,5 +40,11 @@ export default (sequelize) => {
   },
   {
     tableName: "Inscricoes",
+    indexes: [
+      {
+        unique: true,
+        fields: ["id_usuario", "id_torneio"],
+      },
+    ],
   });
 };

@@ -1,43 +1,53 @@
 import models from "../models/index.js";
-const { Usuario, Blacklist } = models;
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
+import { Op } from "sequelize";
+
+const { Usuario, Blacklist } = models;
+
+const limparTokensExpirados = () =>
+  Blacklist.destroy({
+    where: {
+      expiresAt: {
+        [Op.lt]: new Date(),
+      },
+    },
+  });
 
 export const loginService = async (email, senha) => {
-  const usuario = await Usuario.findOne({ where: { email } });
-  if (!usuario)
-    throw new Error("Email ou senha inválidos");
+  if (!email || !senha) throw new Error("Email e senha são obrigatórios");
+
+  const usuario = await Usuario.findOne({ where: { email: email.toLowerCase() } });
+  if (!usuario) throw new Error("Email ou senha inválidos");
 
   const match = await bcrypt.compare(senha, usuario.senha);
-
-  if (!match)
-    throw new Error("Email ou senha inválidos");
+  if (!match) throw new Error("Email ou senha inválidos");
 
   const token = jwt.sign(
     {
       id: usuario.id_usuario,
       email: usuario.email,
-      role: usuario.role
+      role: usuario.role,
     },
     process.env.MY_SECRET,
     {
-      expiresIn: parseInt(process.env.JWT_EXPIRES_IN)
-    }
+      expiresIn: process.env.JWT_EXPIRES_IN || "1h",
+    },
   );
 
   return token;
 };
 
 export const verificarTokenService = async (token) => {
-  if (!token)
-    throw new Error("Token obrigatório");
+  if (!token) throw new Error("Token obrigatório");
+
+  await limparTokensExpirados();
 
   const tokenBlacklisted = await Blacklist.findOne({
-    where: { token }
+    where: { token },
   });
 
-  if (tokenBlacklisted)
-    throw new Error("Token inválido");
+  if (tokenBlacklisted) throw new Error("Token inválido");
 
   try {
     return jwt.verify(token, process.env.MY_SECRET);
@@ -49,12 +59,14 @@ export const verificarTokenService = async (token) => {
 export const logoutService = async (token) => {
   const decoded = jwt.verify(token, process.env.MY_SECRET);
 
+  await limparTokensExpirados();
+
   await Blacklist.create({
     token,
-    expiresAt: new Date(decoded.exp * 1000)
+    expiresAt: new Date(decoded.exp * 1000),
   });
 
   return {
-    message: "Você deslogou"
+    message: "Logout realizado com sucesso",
   };
 };

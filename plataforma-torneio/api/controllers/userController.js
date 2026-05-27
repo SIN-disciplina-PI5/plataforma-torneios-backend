@@ -5,13 +5,10 @@ import {
   updateUsuarioService,
   deleteUsuarioService,
 } from "../services/userService.js";
-
 import { validarRecaptcha } from "../utils/recaptcha.js";
 
 export const createUsuario = async (req, res) => {
-  try {
-    const { recaptchaToken, ...dados } = req.body;
-
+  
     // Valida o recaptcha apenas se o token for fornecido, recaptcha não obrighatorio
     // if (recaptchaToken) {
       // await validarRecaptcha(recaptchaToken);
@@ -19,6 +16,9 @@ export const createUsuario = async (req, res) => {
     // return res.status(400).json({ error: "Recaptcha obrigatório" });
     
 
+    
+  try {
+    const { recaptchaToken, ...dados } = req.body;
     const result = await createUsuarioService(dados);
 
     return res.status(201).json({

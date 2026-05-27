@@ -169,6 +169,7 @@ Notificacao.belongsTo(Usuario, {
 });
 
 export default {
+  sequelize,
   Usuario,
   Torneio,
   Inscricao,

@@ -26,7 +26,7 @@ app.use("/api", routes);
 if (process.env.NODE_ENV !== "test") {
   models.sequelize
     .sync()
-    .then(() => console.log("Banco sincronizado com segurança ✅"))
+    .then(() => console.log("Banco sincronizado com segurança"))
     .catch((err) => console.error("Erro ao sincronizar banco:", err));
 
   const port = process.env.PORT ?? 4000;

@@ -27,5 +27,13 @@ export default (sequelize) => {
       type: DataTypes.STRING,
       allowNull: true,
     },
+  },
+  {
+    indexes: [
+      {
+        unique: true,
+        fields: ["id_partida", "id_equipe"],
+      },
+    ],
   });
 };

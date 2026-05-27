@@ -9,7 +9,7 @@ import {
 
 export const getRankingGeral = async (req, res) => {
   try {
-    const limite = req.query.limite ? parseInt(req.query.limite) : 100;
+    const limite = req.query.limite ? parseInt(req.query.limite, 10) : 100;
     const ranking = await getRankingGeralService(limite);
     return res.status(200).json({
       results: ranking.length,
@@ -35,7 +35,7 @@ export const getRankingUsuario = async (req, res) => {
 
 export const getRankingByPosicao = async (req, res) => {
   try {
-    const posicao = parseInt(req.params.posicao);
+    const posicao = parseInt(req.params.posicao, 10);
     const ranking = await getRankingByPosicaoService(posicao);
     return res.status(200).json({ data: ranking });
   } catch (error) {
