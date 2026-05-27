@@ -14,11 +14,11 @@ const buscarEquipeDoUsuarioNoTorneio = async (id_torneio, id_usuario, options = 
     where: { id_usuario },
     through: { attributes: [] },
   };
-
+  
   if (options.lock) {
     includeOptions.required = true;
   }
-
+  
   return Equipe.findOne({
     include: [includeOptions],
     where: { id_torneio },
@@ -102,13 +102,17 @@ export const entrarNaEquipeService = async (id_torneio, id_usuario, id_equipe) =
     });
     if (equipeJaExistente) throw new Error("Usuário já possui uma equipe neste torneio");
 
-    const equipe = await Equipe.findByPk(id_equipe, {
-      include: [{ model: Usuario, as: "membros", attributes: ["id_usuario"] }],
+    const equipeTravada = await Equipe.findByPk(id_equipe, {
       transaction,
       lock: transaction.LOCK.UPDATE,
     });
+    if (!equipeTravada) throw new Error("Equipe não encontrada");
 
-    if (!equipe) throw new Error("Equipe não encontrada");
+    const equipe = await Equipe.findByPk(id_equipe, {
+      include: [{ model: Usuario, as: "membros", attributes: ["id_usuario"] }],
+      transaction,
+    });
+
     if (equipe.id_torneio !== id_torneio) throw new Error("Equipe não pertence a este torneio");
     if (equipe.membros.length >= 2) throw new Error("Equipe já está cheia");
 
