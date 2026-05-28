@@ -308,7 +308,7 @@ export const finalizarPartidaService = async (id, dados) => {
 
   try {
     const partida = await Partida.findByPk(id, {
-      include: [{ model: PartidaUsuario, as: "equipesPartida" }],
+      include: [{ model: PartidaUsuario, as: "equipesPartida", required: true }],
       transaction,
       lock: transaction.LOCK.UPDATE,
     });

@@ -297,6 +297,7 @@ export const adminAddMembroService = async (id_equipe, id_usuario) => {
           model: Usuario,
           as: "membros",
           attributes: ["id_usuario"],
+          required: true,
         },
       ],
       transaction,
