@@ -8,13 +8,15 @@ import {
   iniciarPartidaService,
   finalizarPartidaService,
 } from "../services/partidaService.js";
+import { getStatusCodeByError } from "../utils/errorHandler.js";
 
 export const createPartida = async (req, res) => {
   try {
     const result = await createPartidaService(req.body);
     return res.status(201).json({ message: "Partida criada", data: result });
   } catch (e) {
-    return res.status(400).json({ error: e.message });
+    const statusCode = getStatusCodeByError(e.message);
+    return res.status(statusCode).json({ error: e.message });
   }
 };
 
@@ -23,7 +25,8 @@ export const getPartidaById = async (req, res) => {
     const partida = await getPartidaByIdService(req.params.id_partida);
     return res.status(200).json({ data: partida });
   } catch (e) {
-    return res.status(404).json({ error: e.message });
+    const statusCode = getStatusCodeByError(e.message);
+    return res.status(statusCode).json({ error: e.message });
   }
 };
 
@@ -32,7 +35,8 @@ export const getAllPartidas = async (req, res) => {
     const partidas = await getAllPartidasService(req.query);
     return res.status(200).json({ data: partidas });
   } catch (e) {
-    return res.status(400).json({ error: e.message });
+    const statusCode = getStatusCodeByError(e.message);
+    return res.status(statusCode).json({ error: e.message });
   }
 };
 
@@ -41,7 +45,8 @@ export const updatePartida = async (req, res) => {
     const partida = await updatePartidaService(req.params.id_partida, req.body);
     return res.status(200).json({ message: "Partida atualizada", data: partida });
   } catch (e) {
-    return res.status(400).json({ error: e.message });
+    const statusCode = getStatusCodeByError(e.message);
+    return res.status(statusCode).json({ error: e.message });
   }
 };
 
@@ -50,7 +55,8 @@ export const deletePartida = async (req, res) => {
     await deletePartidaService(req.params.id_partida);
     return res.status(204).send();
   } catch (e) {
-    return res.status(400).json({ error: e.message });
+    const statusCode = getStatusCodeByError(e.message);
+    return res.status(statusCode).json({ error: e.message });
   }
 };
 
@@ -60,7 +66,8 @@ export const agendar = async (req, res) => {
     const partida = await agendarPartidaService(req.params.id_partida, horario);
     return res.status(200).json({ message: "Partida agendada", data: partida });
   } catch (e) {
-    return res.status(400).json({ error: e.message });
+    const statusCode = getStatusCodeByError(e.message);
+    return res.status(statusCode).json({ error: e.message });
   }
 };
 
@@ -69,7 +76,8 @@ export const iniciar = async (req, res) => {
     const partida = await iniciarPartidaService(req.params.id_partida);
     return res.status(200).json({ message: "Partida iniciada", data: partida });
   } catch (e) {
-    return res.status(400).json({ error: e.message });
+    const statusCode = getStatusCodeByError(e.message);
+    return res.status(statusCode).json({ error: e.message });
   }
 };
 
@@ -78,6 +86,7 @@ export const finalizar = async (req, res) => {
     const partida = await finalizarPartidaService(req.params.id_partida, req.body);
     return res.status(200).json({ message: "Partida finalizada", data: partida });
   } catch (e) {
-    return res.status(400).json({ error: e.message });
+    const statusCode = getStatusCodeByError(e.message);
+    return res.status(statusCode).json({ error: e.message });
   }
 };

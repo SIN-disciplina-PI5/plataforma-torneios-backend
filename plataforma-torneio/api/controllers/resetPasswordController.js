@@ -2,6 +2,7 @@ import {
   forgotPasswordService,
   resetPasswordService,
 } from "../services/resetPasswordService.js";
+import { getStatusCodeByError } from "../utils/errorHandler.js";
 
 export const forgotPassword = async (req, res) => {
   try {
@@ -9,7 +10,8 @@ export const forgotPassword = async (req, res) => {
     const result = await forgotPasswordService(email);
     return res.status(200).json(result);
   } catch (e) {
-    return res.status(400).json({ error: e.message });
+    const statusCode = getStatusCodeByError(e.message);
+    return res.status(statusCode).json({ error: e.message });
   }
 };
 
@@ -19,6 +21,7 @@ export const resetPassword = async (req, res) => {
     const result = await resetPasswordService(token, novaSenha);
     return res.status(200).json(result);
   } catch (e) {
-    return res.status(400).json({ error: e.message });
+    const statusCode = getStatusCodeByError(e.message);
+    return res.status(statusCode).json({ error: e.message });
   }
 };

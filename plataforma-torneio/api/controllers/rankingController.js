@@ -6,6 +6,7 @@ import {
   recalcularRankingCompletoService,
   resetarRankingUsuarioService,
 } from "../services/rankingService.js";
+import { getStatusCodeByError } from "../utils/errorHandler.js";
 
 export const getRankingGeral = async (req, res) => {
   try {
@@ -16,7 +17,8 @@ export const getRankingGeral = async (req, res) => {
       data: ranking,
     });
   } catch (error) {
-    return res.status(500).json({ error: error.message });
+    const statusCode = getStatusCodeByError(error.message);
+    return res.status(statusCode).json({ error: error.message });
   }
 };
 
@@ -29,7 +31,8 @@ export const getRankingUsuario = async (req, res) => {
     }
     return res.status(200).json({ data: ranking });
   } catch (error) {
-    return res.status(500).json({ error: error.message });
+    const statusCode = getStatusCodeByError(error.message);
+    return res.status(statusCode).json({ error: error.message });
   }
 };
 
@@ -39,7 +42,8 @@ export const getRankingByPosicao = async (req, res) => {
     const ranking = await getRankingByPosicaoService(posicao);
     return res.status(200).json({ data: ranking });
   } catch (error) {
-    return res.status(404).json({ error: error.message });
+    const statusCode = getStatusCodeByError(error.message);
+    return res.status(statusCode).json({ error: error.message });
   }
 };
 
@@ -55,7 +59,8 @@ export const atualizarPontuacao = async (req, res) => {
       data: ranking,
     });
   } catch (error) {
-    return res.status(500).json({ error: error.message });
+    const statusCode = getStatusCodeByError(error.message);
+    return res.status(statusCode).json({ error: error.message });
   }
 };
 
@@ -67,7 +72,8 @@ export const recalcularRanking = async (req, res) => {
       data: { total: result.total },
     });
   } catch (error) {
-    return res.status(500).json({ error: error.message });
+    const statusCode = getStatusCodeByError(error.message);
+    return res.status(statusCode).json({ error: error.message });
   }
 };
 
@@ -80,6 +86,7 @@ export const resetarRankingUsuario = async (req, res) => {
       data: ranking,
     });
   } catch (error) {
-    return res.status(500).json({ error: error.message });
+    const statusCode = getStatusCodeByError(error.message);
+    return res.status(statusCode).json({ error: error.message });
   }
 };

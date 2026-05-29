@@ -45,10 +45,10 @@ export const createTorneioService = async (dados) => {
   if (fim <= inicio)
     throw new Error("Data de fim deve ser posterior à data de início");
 
-  const vagasValidas = [8, 16, 32];
+  const vagasValidas = [4, 8, 16, 32];
 
   if (!vagasValidas.includes(Number(vagas)))
-    throw new Error("As vagas devem ser 8, 16 ou 32");
+    throw new Error("As vagas devem ser 4, 8, 16 ou 32");
 
   const diferencaMinutos = (fim - inicio) / 60000;
   const tempoMinimo = calcularTempoMinimoTorneio(vagas);
@@ -83,6 +83,7 @@ export const createTorneioService = async (dados) => {
     data_inicio: novoTorneio.data_inicio,
     data_fim: novoTorneio.data_fim,
     turno: novoTorneio.turno,
+    fase_atual: novoTorneio.fase_atual,
   };
 };
 
@@ -98,6 +99,7 @@ export const getAllTorneiosService = async () => {
     data_inicio: t.data_inicio,
     data_fim: t.data_fim,
     turno: t.turno,
+    fase_atual: t.fase_atual,
   }));
 };
 
@@ -115,6 +117,7 @@ export const getTorneioByIdService = async (id) => {
     data_inicio: torneio.data_inicio,
     data_fim: torneio.data_fim,
     turno: torneio.turno,
+    fase_atual: torneio.fase_atual,
   };
 };
 
@@ -132,10 +135,10 @@ export const updateTorneioService = async (id, dados) => {
   }
 
   if (dados.vagas !== undefined) {
-    const vagasValidas = [8, 16, 32];
+    const vagasValidas = [4, 8, 16, 32];
 
     if (!vagasValidas.includes(Number(dados.vagas)))
-      throw new Error("As vagas devem ser 8, 16 ou 32");
+      throw new Error("As vagas devem ser 4, 8, 16 ou 32");
   }
 
   if (dados.turno !== undefined) {
@@ -186,6 +189,7 @@ export const updateTorneioService = async (id, dados) => {
     data_inicio: torneio.data_inicio,
     data_fim: torneio.data_fim,
     turno: torneio.turno,
+    fase_atual: torneio.fase_atual,
   };
 };
 
@@ -345,6 +349,8 @@ export const gerarChaveService = async (id_torneio) => {
       );
     }
 
+    await torneio.update({ fase_atual: faseInicial }, { transaction });
+
     const partidasComEquipes = await Partida.findAll({
       where: { id_partida: idsPartidasCriadas },
       include: [{ model: PartidaUsuario, as: "equipesPartida", required: true }],
@@ -363,16 +369,25 @@ export const avancarFaseService = async (id_torneio) => {
   const transaction = await sequelize.transaction();
 
   try {
-    const ultimaPartida = await Partida.findOne({
-      where: { id_torneio },
-      order: [["horario", "DESC"]],
+    const torneio = await Torneio.findByPk(id_torneio, { transaction });
+    if (!torneio) throw new Error("Torneio não encontrado");
+    if (!torneio.fase_atual)
+      throw new Error("Nenhuma partida foi gerada para este torneio ainda.");
+
+    const faseAtual = torneio.fase_atual;
+
+    const partidasNaFase = await Partida.count({
+      where: {
+        id_torneio,
+        fase: faseAtual,
+      },
       transaction,
     });
 
-    if (!ultimaPartida) 
-      throw new Error("Nenhuma partida foi gerada para este torneio ainda.");
-
-    const faseAtual = ultimaPartida.fase;
+    if (partidasNaFase === 0)
+      throw new Error(
+        `Não há partidas geradas na fase atual: ${faseAtual.replace(/_/g, " ")}`,
+      );
 
     const partidasPendentes = await Partida.count({
       where: {
@@ -428,12 +443,20 @@ export const avancarFaseService = async (id_torneio) => {
     if (vencedores.length % 2 !== 0)
       throw new Error("Número inválido de vencedores para formar os próximos confrontos");
 
-    const torneio = await Torneio.findByPk(id_torneio, { transaction });
+    const ultimaPartidaDaFase = await Partida.findOne({
+      where: {
+        id_torneio,
+        fase: faseAtual,
+      },
+      order: [["horario", "DESC"]],
+      transaction,
+    });
 
-    if (!torneio) throw new Error("Torneio não encontrado");
+    if (!ultimaPartidaDaFase)
+      throw new Error("Não foi possível determinar o último horário da fase atual");
 
     let horarioAtual = new Date(
-      new Date(ultimaPartida.horario).getTime() + DURACAO_PARTIDA_MINUTOS * 60000,
+      new Date(ultimaPartidaDaFase.horario).getTime() + DURACAO_PARTIDA_MINUTOS * 60000,
     );
 
     const totalNovasPartidas = vencedores.length / 2;
@@ -483,6 +506,8 @@ export const avancarFaseService = async (id_torneio) => {
       );
     }
 
+    await torneio.update({ fase_atual: proximaFase }, { transaction });
+
     const novasPartidasComEquipes = await Partida.findAll({
       where: { id_partida: idsNovasPartidas },
       include: [{ model: PartidaUsuario, as: "equipesPartida", required: true }],
@@ -511,6 +536,7 @@ export const atualizarStatusService = async (id_torneio, status) => {
     status: torneio.status,
     data_inicio: torneio.data_inicio,
     data_fim: torneio.data_fim,
+    fase_atual: torneio.fase_atual,
   };
 };
 

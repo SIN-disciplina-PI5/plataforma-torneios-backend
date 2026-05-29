@@ -52,5 +52,10 @@ export default (sequelize) => {
         },
       },
     },
+    fase_atual: {
+      type: DataTypes.ENUM("OITAVAS_DE_FINAL", "QUARTAS_DE_FINAL", "SEMI_FINAL", "FINAL"),
+      allowNull: true,
+      defaultValue: null,
+    },
   });
 };

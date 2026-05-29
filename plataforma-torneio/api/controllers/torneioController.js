@@ -8,6 +8,7 @@ import {
   avancarFaseService,
   atualizarStatusService,
 } from "../services/torneioService.js";
+import { getStatusCodeByError } from "../utils/errorHandler.js";
 
 export const createTorneio = async (req, res) => {
   try {
@@ -17,7 +18,8 @@ export const createTorneio = async (req, res) => {
       data: novoTorneio,
     });
   } catch (e) {
-    return res.status(400).json({ error: e.message });
+    const statusCode = getStatusCodeByError(e.message);
+    return res.status(statusCode).json({ error: e.message });
   }
 };
 
@@ -35,7 +37,8 @@ export const getTorneioById = async (req, res) => {
     const torneio = await getTorneioByIdService(req.params.id_torneio);
     return res.status(200).json({ data: torneio });
   } catch (e) {
-    return res.status(404).json({ error: e.message });
+    const statusCode = getStatusCodeByError(e.message);
+    return res.status(statusCode).json({ error: e.message });
   }
 };
 
@@ -47,7 +50,8 @@ export const updateTorneio = async (req, res) => {
       data: torneioAtualizado,
     });
   } catch (e) {
-    return res.status(400).json({ error: e.message });
+    const statusCode = getStatusCodeByError(e.message);
+    return res.status(statusCode).json({ error: e.message });
   }
 };
 
@@ -56,7 +60,8 @@ export const deleteTorneio = async (req, res) => {
     await deleteTorneioService(req.params.id_torneio);
     return res.status(204).send();
   } catch (e) {
-    return res.status(400).json({ error: e.message });
+    const statusCode = getStatusCodeByError(e.message);
+    return res.status(statusCode).json({ error: e.message });
   }
 };
 
@@ -68,7 +73,8 @@ export const gerarChave = async (req, res) => {
       data: partidas,
     });
   } catch (e) {
-    return res.status(400).json({ error: e.message });
+    const statusCode = getStatusCodeByError(e.message);
+    return res.status(statusCode).json({ error: e.message });
   }
 };
 
@@ -80,7 +86,8 @@ export const avancarFase = async (req, res) => {
       data: partidas,
     });
   } catch (e) {
-    return res.status(400).json({ error: e.message });
+    const statusCode = getStatusCodeByError(e.message);
+    return res.status(statusCode).json({ error: e.message });
   }
 };
 
@@ -92,6 +99,7 @@ export const atualizarStatusTorneio = async (req, res) => {
       data: torneio,
     });
   } catch (e) {
-    return res.status(400).json({ error: e.message });
+    const statusCode = getStatusCodeByError(e.message);
+    return res.status(statusCode).json({ error: e.message });
   }
 };

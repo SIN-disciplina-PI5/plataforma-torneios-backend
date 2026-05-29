@@ -23,7 +23,6 @@ export const loginService = async (email, senha) => {
   const match = await bcrypt.compare(senha, usuario.senha);
   if (!match) throw new Error("Email ou senha inválidos");
 
-  console.log("LOGIN SECRET:", process.env.MY_SECRET);
   const token = jwt.sign(
     {
       id: usuario.id_usuario,
@@ -40,8 +39,6 @@ export const loginService = async (email, senha) => {
 };
 
 export const verificarTokenService = async (token) => {
-  console.log("TOKEN VERIFY:", token);
-  console.log("SECRET VERIFY:", process.env.MY_SECRET);
 
   if (!token) throw new Error("Token obrigatório");
 

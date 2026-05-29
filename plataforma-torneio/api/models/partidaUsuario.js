@@ -23,10 +23,6 @@ export default (sequelize) => {
         key: "id_equipe",
       },
     },
-    status_individual: {
-      type: DataTypes.STRING,
-      allowNull: true,
-    },
   },
   {
     indexes: [

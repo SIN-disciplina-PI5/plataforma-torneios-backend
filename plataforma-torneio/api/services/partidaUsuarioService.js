@@ -1,7 +1,7 @@
 import models from "../models/index.js";
 
 const { PartidaUsuario, Partida, Equipe } = models;
-const FILTROS_PERMITIDOS = ["id_partida_usuario", "id_partida", "id_equipe", "status_individual"];
+const FILTROS_PERMITIDOS = ["id_partida_usuario", "id_partida", "id_equipe"];
 
 const filtrarConsulta = (filtros = {}) => {
   const where = {};
@@ -38,7 +38,6 @@ export const createPartidaUsuarioService = async (dados) => {
     id_partida_usuario: vinculo.id_partida_usuario,
     id_partida: vinculo.id_partida,
     id_equipe: vinculo.id_equipe,
-    status_individual: vinculo.status_individual,
   };
 };
 
@@ -55,7 +54,6 @@ export const getPartidaUsuarioByIdService = async (id) => {
     id_partida_usuario: vinculo.id_partida_usuario,
     partida: vinculo.partida || { id: vinculo.id_partida },
     equipe: vinculo.equipe || { id: vinculo.id_equipe },
-    status_individual: vinculo.status_individual,
   };
 };
 
@@ -72,7 +70,6 @@ export const getAllPartidasUsuarioService = async (filtros = {}) => {
     id_partida_usuario: v.id_partida_usuario,
     partida: v.partida ? { id: v.id_partida, fase: v.partida.fase } : { id: v.id_partida },
     equipe: v.equipe ? { id: v.id_equipe, nome: v.equipe.nome } : { id: v.id_equipe },
-    status_individual: v.status_individual,
   }));
 };
 
@@ -81,14 +78,11 @@ export const updatePartidaUsuarioService = async (id, dados) => {
   if (!vinculo) throw new Error("Vínculo não encontrado");
 
   const dadosPermitidos = {};
-  if (dados.status_individual !== undefined) dadosPermitidos.status_individual = dados.status_individual;
-
   await vinculo.update(dadosPermitidos);
   return {
     id_partida_usuario: vinculo.id_partida_usuario,
     id_partida: vinculo.id_partida,
     id_equipe: vinculo.id_equipe,
-    status_individual: vinculo.status_individual,
   };
 };
 
@@ -99,13 +93,4 @@ export const deletePartidaUsuarioService = async (id) => {
   return { message: "Vínculo removido com sucesso" };
 };
 
-export const definirStatusIndividualService = async (id, status) => {
-  if (!status) throw new Error("Status é obrigatório");
-  const vinculo = await PartidaUsuario.findByPk(id);
-  if (!vinculo) throw new Error("Vínculo não encontrado");
-  await vinculo.update({ status_individual: status });
-  return {
-    id_partida_usuario: vinculo.id_partida_usuario,
-    status_individual: vinculo.status_individual,
-  };
-};
+

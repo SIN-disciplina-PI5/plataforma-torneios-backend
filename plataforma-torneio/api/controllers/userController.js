@@ -6,6 +6,7 @@ import {
   deleteUsuarioService,
 } from "../services/userService.js";
 import { validarRecaptcha } from "../utils/recaptcha.js";
+import { getStatusCodeByError } from "../utils/errorHandler.js";
 
 export const createUsuario = async (req, res) => {
   
@@ -26,7 +27,8 @@ export const createUsuario = async (req, res) => {
       data: result,
     });
   } catch (e) {
-    return res.status(403).json({ error: e.message });
+    const statusCode = getStatusCodeByError(e.message);
+    return res.status(statusCode).json({ error: e.message });
   }
 };
 
@@ -44,8 +46,8 @@ export const getUsuarioById = async (req, res) => {
     const usuario = await getUsuarioByIdService(req.params.id_usuario, req.user);
     return res.status(200).json({ data: usuario });
   } catch (e) {
-    const status = e.message === "Acesso negado" ? 403 : 404;
-    return res.status(status).json({ error: e.message });
+    const statusCode = getStatusCodeByError(e.message);
+    return res.status(statusCode).json({ error: e.message });
   }
 };
 
@@ -57,7 +59,8 @@ export const updateUsuario = async (req, res) => {
       data: usuario,
     });
   } catch (e) {
-    return res.status(400).json({ error: e.message });
+    const statusCode = getStatusCodeByError(e.message);
+    return res.status(statusCode).json({ error: e.message });
   }
 };
 
@@ -66,7 +69,7 @@ export const deleteUsuario = async (req, res) => {
     await deleteUsuarioService(req.params.id_usuario, req.user);
     return res.status(204).send();
   } catch (e) {
-    const status = e.message === "Acesso negado" ? 403 : 400;
-    return res.status(status).json({ error: e.message });
+    const statusCode = getStatusCodeByError(e.message);
+    return res.status(statusCode).json({ error: e.message });
   }
 };

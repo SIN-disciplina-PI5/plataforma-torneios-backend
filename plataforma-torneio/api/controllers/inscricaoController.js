@@ -6,6 +6,7 @@ import {
   deleteInscricaoService,
   getInscricoesByTorneioService,
 } from "../services/inscricaoService.js";
+import { getStatusCodeByError } from "../utils/errorHandler.js";
 
 export const createInscricao = async (req, res) => {
   try {
@@ -16,7 +17,8 @@ export const createInscricao = async (req, res) => {
     const inscricao = await createInscricaoService({ ...req.body, id_usuario });
     res.status(201).json(inscricao);
   } catch (error) {
-    res.status(400).json({ error: error.message });
+    const statusCode = getStatusCodeByError(error.message);
+    res.status(statusCode).json({ error: error.message });
   }
 };
 
@@ -35,8 +37,8 @@ export const getInscricaoById = async (req, res) => {
     const inscricao = await getInscricaoByIdService(id_inscricao, req.user);
     res.status(200).json(inscricao);
   } catch (error) {
-    const status = error.message === "Acesso negado" ? 403 : 404;
-    res.status(status).json({ error: error.message });
+    const statusCode = getStatusCodeByError(error.message);
+    res.status(statusCode).json({ error: error.message });
   }
 };
 
@@ -46,7 +48,8 @@ export const updateInscricao = async (req, res) => {
     const inscricao = await updateInscricaoService(id_inscricao, req.body, req.user);
     res.status(200).json(inscricao);
   } catch (error) {
-    res.status(400).json({ error: error.message });
+    const statusCode = getStatusCodeByError(error.message);
+    res.status(statusCode).json({ error: error.message });
   }
 };
 
@@ -56,8 +59,8 @@ export const deleteInscricao = async (req, res) => {
     const result = await deleteInscricaoService(id_inscricao, req.user);
     res.status(200).json(result);
   } catch (error) {
-    const status = error.message === "Acesso negado" ? 403 : 404;
-    res.status(status).json({ error: error.message });
+    const statusCode = getStatusCodeByError(error.message);
+    res.status(statusCode).json({ error: error.message });
   }
 };
 

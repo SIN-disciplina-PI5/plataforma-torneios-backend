@@ -1,5 +1,6 @@
 import models from "../models/index.js";
 import { criarNotificacaoService } from "../services/notificacaoService.js";
+import { getStatusCodeByError } from "../utils/errorHandler.js";
 
 const { Notificacao } = models;
 
@@ -13,7 +14,8 @@ export const listarNotificacoes = async (req, res) => {
     res.json(notificacoes);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ erro: "Erro ao buscar notificações" });
+    const statusCode = getStatusCodeByError(error.message);
+    res.status(statusCode).json({ erro: error.message });
   }
 };
 
@@ -23,7 +25,8 @@ export const criarNotificacao = async (req, res) => {
     res.status(201).json(nova);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ erro: "Erro ao criar notificação" });
+    const statusCode = getStatusCodeByError(error.message);
+    res.status(statusCode).json({ erro: error.message });
   }
 };
 
@@ -45,6 +48,7 @@ export const marcarComoLida = async (req, res) => {
     res.json(notificacao);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ erro: "Erro ao atualizar notificação" });
+    const statusCode = getStatusCodeByError(error.message);
+    res.status(statusCode).json({ erro: error.message });
   }
 };

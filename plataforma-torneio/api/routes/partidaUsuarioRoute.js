@@ -8,7 +8,6 @@ import {
   getAllPartidasUsuario,
   updatePartidaUsuario,
   deletePartidaUsuario,
-  definirStatusIndividual,
 } from "../controllers/partidaUsuarioController.js";
 
 const router = Router();
@@ -18,6 +17,5 @@ router.get("/", authenticateToken, getAllPartidasUsuario);
 router.get("/:id_partida_usuario", authenticateToken, getPartidaUsuarioById);
 router.patch("/:id_partida_usuario", authenticateToken, checkAdmin, rateLimiter, updatePartidaUsuario);
 router.delete("/:id_partida_usuario", authenticateToken, checkAdmin, rateLimiter, deletePartidaUsuario);
-router.patch("/status/:id_partida_usuario", authenticateToken, checkAdmin, rateLimiter, definirStatusIndividual);
 
 export default router;
