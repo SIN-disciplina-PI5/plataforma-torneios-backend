@@ -28,6 +28,11 @@ export const createTorneioService = async (dados) => {
   const nome = normalizarTextoObrigatorio(dados.nome, "Nome do torneio");
   const categoria = normalizarTextoObrigatorio(dados.categoria, "Categoria");
   const { vagas, data_inicio, data_fim } = dados;
+  const turno = dados.turno;
+
+  const valoresTurno = ["MANHA", "TARDE", "NOITE"];
+  if (!turno) throw new Error("Turno é obrigatório");
+  if (!valoresTurno.includes(String(turno))) throw new Error("Turno inválido");
 
   if (!vagas) throw new Error("Número de vagas é obrigatório");
   if (!data_inicio) throw new Error("Data de início é obrigatória");
@@ -66,6 +71,7 @@ export const createTorneioService = async (dados) => {
     status: true,
     data_inicio: inicio,
     data_fim: fim,
+    turno: String(turno),
   });
 
   return {
@@ -76,6 +82,7 @@ export const createTorneioService = async (dados) => {
     status: novoTorneio.status,
     data_inicio: novoTorneio.data_inicio,
     data_fim: novoTorneio.data_fim,
+    turno: novoTorneio.turno,
   };
 };
 
@@ -90,6 +97,7 @@ export const getAllTorneiosService = async () => {
     status: t.status,
     data_inicio: t.data_inicio,
     data_fim: t.data_fim,
+    turno: t.turno,
   }));
 };
 
@@ -106,6 +114,7 @@ export const getTorneioByIdService = async (id) => {
     status: torneio.status,
     data_inicio: torneio.data_inicio,
     data_fim: torneio.data_fim,
+    turno: torneio.turno,
   };
 };
 
@@ -127,6 +136,11 @@ export const updateTorneioService = async (id, dados) => {
 
     if (!vagasValidas.includes(Number(dados.vagas)))
       throw new Error("As vagas devem ser 8, 16 ou 32");
+  }
+
+  if (dados.turno !== undefined) {
+    const valoresTurno = ["MANHA", "TARDE", "NOITE"];
+    if (!valoresTurno.includes(String(dados.turno))) throw new Error("Turno inválido");
   }
 
   const vagasFinais = dados.vagas ?? torneio.vagas;
@@ -171,6 +185,7 @@ export const updateTorneioService = async (id, dados) => {
     status: torneio.status,
     data_inicio: torneio.data_inicio,
     data_fim: torneio.data_fim,
+    turno: torneio.turno,
   };
 };
 
@@ -265,6 +280,22 @@ export const gerarChaveService = async (id_torneio) => {
     const idsPartidasCriadas = [];
 
     let horarioAtual = new Date(torneio.data_inicio);
+
+    if (torneio.turno) {
+      switch (String(torneio.turno)) {
+        case "MANHA":
+          horarioAtual.setHours(8, 0, 0, 0);
+          break;
+        case "TARDE":
+          horarioAtual.setHours(13, 0, 0, 0);
+          break;
+        case "NOITE":
+          horarioAtual.setHours(18, 0, 0, 0);
+          break;
+        default:
+          break;
+      }
+    }
     const totalPartidas = embaralhadas.length / 2;
 
     const ultimoHorario = new Date(

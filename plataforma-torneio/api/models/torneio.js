@@ -42,5 +42,15 @@ export default (sequelize) => {
       type: DataTypes.DATE,
       allowNull: false,
     },
+    turno: {
+      type: DataTypes.ENUM("MANHA", "TARDE", "NOITE"),
+      allowNull: false,
+      validate: {
+        isIn: {
+          args: [["MANHA", "TARDE", "NOITE"]],
+          msg: "Turno inválido",
+        },
+      },
+    },
   });
 };
