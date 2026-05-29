@@ -536,9 +536,14 @@ export const finalizarPartidaService = async (id, dados) => {
       throw new Error("Equipe vencedora não participa desta partida");
     }
 
+    const placarFinal = placar !== undefined ? placar : partida.placar;
+    if (!placarFinal) {
+      throw new Error("Placar obrigatório para finalizar a partida");
+    }
+
     await partida.update(
       {
-        placar: placar || partida.placar,
+        placar: placarFinal,
         vencedor_id,
         resultado: resultado || partida.resultado,
         status: "FINALIZADA",
