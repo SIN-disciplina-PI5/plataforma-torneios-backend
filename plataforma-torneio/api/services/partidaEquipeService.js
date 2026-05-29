@@ -1,7 +1,7 @@
 import models from "../models/index.js";
 
-const { PartidaUsuario, Partida, Equipe } = models;
-const FILTROS_PERMITIDOS = ["id_partida_usuario", "id_partida", "id_equipe"];
+const { PartidaEquipe, Partida, Equipe } = models;
+const FILTROS_PERMITIDOS = ["id_partida_equipe", "id_partida", "id_equipe"];
 
 const filtrarConsulta = (filtros = {}) => {
   const where = {};
@@ -11,7 +11,7 @@ const filtrarConsulta = (filtros = {}) => {
   return where;
 };
 
-export const createPartidaUsuarioService = async (dados) => {
+export const createPartidaEquipeService = async (dados) => {
   const { id_partida, id_equipe } = dados;
   if (!id_partida) throw new Error("ID da partida é obrigatório");
   if (!id_equipe) throw new Error("ID da equipe é obrigatório");
@@ -25,24 +25,24 @@ export const createPartidaUsuarioService = async (dados) => {
     throw new Error("Equipe e partida devem pertencer ao mesmo torneio");
   }
 
-  const totalEquipes = await PartidaUsuario.count({ where: { id_partida } });
+  const totalEquipes = await PartidaEquipe.count({ where: { id_partida } });
   if (totalEquipes >= 2) throw new Error("Partida já possui duas equipes");
 
-  const vinculoExistente = await PartidaUsuario.findOne({
+  const vinculoExistente = await PartidaEquipe.findOne({
     where: { id_partida, id_equipe },
   });
   if (vinculoExistente) throw new Error("Equipe já vinculada a esta partida");
 
-  const vinculo = await PartidaUsuario.create({ id_partida, id_equipe });
+  const vinculo = await PartidaEquipe.create({ id_partida, id_equipe });
   return {
-    id_partida_usuario: vinculo.id_partida_usuario,
+    id_partida_equipe: vinculo.id_partida_equipe,
     id_partida: vinculo.id_partida,
     id_equipe: vinculo.id_equipe,
   };
 };
 
-export const getPartidaUsuarioByIdService = async (id) => {
-  const vinculo = await PartidaUsuario.findByPk(id, {
+export const getPartidaEquipeByIdService = async (id) => {
+  const vinculo = await PartidaEquipe.findByPk(id, {
     include: [
       { model: Partida, as: "partida", attributes: ["fase", "status", "horario"] },
       { model: Equipe, as: "equipe", attributes: ["nome"] },
@@ -51,14 +51,14 @@ export const getPartidaUsuarioByIdService = async (id) => {
   if (!vinculo) throw new Error("Vínculo não encontrado");
 
   return {
-    id_partida_usuario: vinculo.id_partida_usuario,
+    id_partida_equipe: vinculo.id_partida_equipe,
     partida: vinculo.partida || { id: vinculo.id_partida },
     equipe: vinculo.equipe || { id: vinculo.id_equipe },
   };
 };
 
-export const getAllPartidasUsuarioService = async (filtros = {}) => {
-  const vinculos = await PartidaUsuario.findAll({
+export const getAllPartidasEquipeService = async (filtros = {}) => {
+  const vinculos = await PartidaEquipe.findAll({
     where: filtrarConsulta(filtros),
     include: [
       { model: Partida, as: "partida", attributes: ["fase", "status", "horario"] },
@@ -67,27 +67,27 @@ export const getAllPartidasUsuarioService = async (filtros = {}) => {
   });
 
   return vinculos.map((v) => ({
-    id_partida_usuario: v.id_partida_usuario,
+    id_partida_equipe: v.id_partida_equipe,
     partida: v.partida ? { id: v.id_partida, fase: v.partida.fase } : { id: v.id_partida },
     equipe: v.equipe ? { id: v.id_equipe, nome: v.equipe.nome } : { id: v.id_equipe },
   }));
 };
 
-export const updatePartidaUsuarioService = async (id, dados) => {
-  const vinculo = await PartidaUsuario.findByPk(id);
+export const updatePartidaEquipeService = async (id, dados) => {
+  const vinculo = await PartidaEquipe.findByPk(id);
   if (!vinculo) throw new Error("Vínculo não encontrado");
 
   const dadosPermitidos = {};
   await vinculo.update(dadosPermitidos);
   return {
-    id_partida_usuario: vinculo.id_partida_usuario,
+    id_partida_equipe: vinculo.id_partida_equipe,
     id_partida: vinculo.id_partida,
     id_equipe: vinculo.id_equipe,
   };
 };
 
-export const deletePartidaUsuarioService = async (id) => {
-  const vinculo = await PartidaUsuario.findByPk(id);
+export const deletePartidaEquipeService = async (id) => {
+  const vinculo = await PartidaEquipe.findByPk(id);
   if (!vinculo) throw new Error("Vínculo não encontrado");
   await vinculo.destroy();
   return { message: "Vínculo removido com sucesso" };

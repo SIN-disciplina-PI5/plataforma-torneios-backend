@@ -17,11 +17,6 @@ const validarSenhaForte = (senha) => {
 const {
   Usuario,
   Ranking,
-  EquipeUsuario,
-  PartidaUsuario,
-  Partida,
-  Equipe,
-  Torneio,
 } = models;
 
 const podeAcessarUsuario = (id, usuarioLogado = null) =>

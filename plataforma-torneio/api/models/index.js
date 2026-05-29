@@ -10,7 +10,7 @@ import PartidaModel from "./partida.js";
 import EquipeModel from "./equipe.js";
 import EquipeUsuarioModel from "./equipeUsuario.js";
 import RankingModel from "./ranking.js";
-import PartidaUsuarioModel from "./partidaUsuario.js";
+import PartidaEquipeModel from "./partidaEquipe.js";
 import NotificacaoModel from "./notificacao.js";
 
 const sequelize = new Sequelize(process.env.POSTGRES_URL, {
@@ -37,7 +37,7 @@ const Equipe = EquipeModel(sequelize);
 const EquipeUsuario = EquipeUsuarioModel(sequelize);
 const Ranking = RankingModel(sequelize);
 const Partida = PartidaModel(sequelize);
-const PartidaUsuario = PartidaUsuarioModel(sequelize);
+const PartidaEquipe = PartidaEquipeModel(sequelize);
 const Notificacao = NotificacaoModel(sequelize, DataTypes);
 
 Usuario.belongsToMany(Equipe, {
@@ -126,28 +126,28 @@ Partida.belongsTo(Torneio, {
   onUpdate: "CASCADE",
 });
 
-Partida.hasMany(PartidaUsuario, {
+Partida.hasMany(PartidaEquipe, {
   foreignKey: "id_partida",
   as: "equipesPartida",
   onDelete: "CASCADE",
   onUpdate: "CASCADE",
 });
 
-PartidaUsuario.belongsTo(Partida, {
+PartidaEquipe.belongsTo(Partida, {
   foreignKey: "id_partida",
   as: "partida",
   onDelete: "CASCADE",
   onUpdate: "CASCADE",
 });
 
-Equipe.hasMany(PartidaUsuario, {
+Equipe.hasMany(PartidaEquipe, {
   foreignKey: "id_equipe",
   as: "partidasEquipe",
   onDelete: "CASCADE",
   onUpdate: "CASCADE",
 });
 
-PartidaUsuario.belongsTo(Equipe, {
+PartidaEquipe.belongsTo(Equipe, {
   foreignKey: "id_equipe",
   as: "equipe",
   onDelete: "CASCADE",
@@ -178,7 +178,7 @@ export default {
   EquipeUsuario,
   Ranking,
   Partida,
-  PartidaUsuario,
+  PartidaEquipe,
   Notificacao,
 };
 

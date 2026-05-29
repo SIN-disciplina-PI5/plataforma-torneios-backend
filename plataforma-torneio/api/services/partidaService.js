@@ -1,7 +1,7 @@
 import models from "../models/index.js";
 import { atualizarPontuacaoService } from "./rankingService.js";
 
-const { Partida, Torneio, Equipe, Usuario, PartidaUsuario } = models;
+const { Partida, Torneio, Equipe, Usuario, PartidaEquipe } = models;
 
 const ORDEM_FASES = {
   OITAVAS_DE_FINAL: 1,
@@ -45,7 +45,7 @@ const obterMaxPartidasPorFase = (vagas, fase) => {
 };
 
 const obterEquipesEliminadas = async (id_torneio, equipes, transaction) => {
-  const participacoesFinalizadas = await PartidaUsuario.findAll({
+  const participacoesFinalizadas = await PartidaEquipe.findAll({
     where: { id_equipe: equipes },
     include: [
       {
@@ -216,7 +216,7 @@ export const createPartidaService = async (dados) => {
       );
     }
 
-    const participacoesNaFase = await PartidaUsuario.findAll({
+    const participacoesNaFase = await PartidaEquipe.findAll({
       where: { id_equipe: equipes },
       include: [
         {
@@ -268,7 +268,7 @@ export const createPartidaService = async (dados) => {
       { transaction },
     );
 
-    await PartidaUsuario.bulkCreate(
+    await PartidaEquipe.bulkCreate(
       equipes.map((id_equipe) => ({
         id_partida: novaPartida.id_partida,
         id_equipe,
@@ -303,7 +303,7 @@ export const getPartidaByIdService = async (id) => {
         attributes: ["nome", "categoria"],
       },
       {
-        model: PartidaUsuario,
+        model: PartidaEquipe,
         as: "equipesPartida",
         include: [
           {
@@ -362,7 +362,7 @@ export const getAllPartidasService = async (filtros = {}) => {
         attributes: ["nome"],
       },
       {
-        model: PartidaUsuario,
+        model: PartidaEquipe,
         as: "equipesPartida",
         include: [
           {
@@ -484,7 +484,7 @@ export const agendarPartidaService = async (id, horario) => {
 
 export const iniciarPartidaService = async (id) => {
   const partida = await Partida.findByPk(id, {
-    include: [{ model: PartidaUsuario, as: "equipesPartida" }],
+    include: [{ model: PartidaEquipe, as: "equipesPartida" }],
   });
   if (!partida) throw new Error("Partida não encontrada");
   if (partida.equipesPartida.length !== 2) {
@@ -520,7 +520,7 @@ export const finalizarPartidaService = async (id, dados) => {
   try {
     const partida = await Partida.findOne({
       where: { id_partida: id },
-      include: [{ model: PartidaUsuario, as: "equipesPartida", required: true }],
+      include: [{ model: PartidaEquipe, as: "equipesPartida", required: true }],
       transaction,
       lock: transaction.LOCK.UPDATE,
     });

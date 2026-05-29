@@ -9,7 +9,7 @@ const {
   Torneio,
   Inscricao,
   Partida,
-  PartidaUsuario,
+  PartidaEquipe,
   Equipe,
   Usuario,
   sequelize,
@@ -328,7 +328,7 @@ export const gerarChaveService = async (id_torneio) => {
         { transaction },
       );
 
-      await PartidaUsuario.bulkCreate(
+      await PartidaEquipe.bulkCreate(
         [
           {
             id_partida: partida.id_partida,
@@ -353,7 +353,7 @@ export const gerarChaveService = async (id_torneio) => {
 
     const partidasComEquipes = await Partida.findAll({
       where: { id_partida: idsPartidasCriadas },
-      include: [{ model: PartidaUsuario, as: "equipesPartida", required: true }],
+      include: [{ model: PartidaEquipe, as: "equipesPartida", required: true }],
       transaction,
     });
 
@@ -485,7 +485,7 @@ export const avancarFaseService = async (id_torneio) => {
         { transaction },
       );
 
-      await PartidaUsuario.bulkCreate(
+      await PartidaEquipe.bulkCreate(
         [
           {
             id_partida: partida.id_partida,
@@ -510,7 +510,7 @@ export const avancarFaseService = async (id_torneio) => {
 
     const novasPartidasComEquipes = await Partida.findAll({
       where: { id_partida: idsNovasPartidas },
-      include: [{ model: PartidaUsuario, as: "equipesPartida", required: true }],
+      include: [{ model: PartidaEquipe, as: "equipesPartida", required: true }],
       transaction,
     });
 
