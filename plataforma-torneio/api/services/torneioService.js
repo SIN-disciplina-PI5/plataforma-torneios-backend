@@ -74,7 +74,7 @@ export const createTorneioService = async (dados) => {
 
   if (diferencaMinutos < tempoMinimo) {
     throw new Error(
-      `O torneio precisa ter pelo menos ${tempoMinimo} minutos para ${vagas} usuários`,
+      `O torneio precisa ter pelo menos ${tempoMinimo} minutos para ${vagas} participantes`,
     );
   }
 
@@ -186,7 +186,7 @@ export const updateTorneioService = async (id, dados) => {
 
     if (diferencaMinutos < tempoMinimo) {
       throw new Error(
-        `O torneio precisa ter pelo menos ${tempoMinimo} minutos para ${vagasFinais} usuários`,
+        `O torneio precisa ter pelo menos ${tempoMinimo} minutos para ${vagasFinais} participantes`,
       );
     }
 

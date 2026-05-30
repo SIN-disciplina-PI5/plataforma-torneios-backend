@@ -46,9 +46,5 @@ export default (sequelize) => {
         key: "id_equipe",
       },
     },
-    resultado: {
-      type: DataTypes.TEXT,
-      allowNull: true,
-    },
   });
 };

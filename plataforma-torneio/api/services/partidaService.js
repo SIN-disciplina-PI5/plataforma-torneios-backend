@@ -14,49 +14,30 @@ const FASES_VALIDAS = ["OITAVAS_DE_FINAL", "QUARTAS_DE_FINAL", "SEMI_FINAL", "FI
 const STATUS_VALIDOS = ["PENDENTE", "EM_ANDAMENTO", "FINALIZADA"];
 const FILTROS_PERMITIDOS = ["id_partida", "id_torneio", "fase", "status", "vencedor_id"];
 
+const REGEX_PLACAR = /^\d+-\d+$/;
+
 const fasesPorVagas = (vagas) => {
   const tamanho = Number(vagas);
-
   if (tamanho === 4) return ["FINAL"];
   if (tamanho === 8) return ["SEMI_FINAL", "FINAL"];
   if (tamanho === 16) return ["QUARTAS_DE_FINAL", "SEMI_FINAL", "FINAL"];
   if (tamanho === 32) return ["OITAVAS_DE_FINAL", "QUARTAS_DE_FINAL", "SEMI_FINAL", "FINAL"];
-
   return [];
 };
 
 const getFaseInicialPorVagas = (vagas) => {
   const tamanho = Number(vagas);
-
   if (tamanho === 4) return "FINAL";
   if (tamanho === 8) return "SEMI_FINAL";
   if (tamanho === 16) return "QUARTAS_DE_FINAL";
   if (tamanho === 32) return "OITAVAS_DE_FINAL";
-
   return null;
-};
-
-const getFaseAtualTorneio = (torneio, partidasExistentes) => {
-  if (torneio.fase_atual) return torneio.fase_atual;
-
-  if (!partidasExistentes || partidasExistentes.length === 0) return null;
-
-  return partidasExistentes.reduce((maior, partida) => {
-    return ORDEM_FASES[partida.fase] > ORDEM_FASES[maior] ? partida.fase : maior;
-  }, partidasExistentes[0].fase);
 };
 
 const obterMaxPartidasPorFase = (vagas, fase) => {
   const fases = fasesPorVagas(vagas);
   const indice = fases.indexOf(fase);
-
   if (indice === -1) return null;
-
-  // vagas = quantidade de usuários inscritos
-  // 4 usuários -> 1 partida na final
-  // 8 usuários -> 2 partidas na semi
-  // 16 usuários -> 4 partidas nas quartas
-  // 32 usuários -> 8 partidas nas oitavas
   return Number(vagas) / 2 ** (indice + 2);
 };
 
@@ -67,10 +48,7 @@ const obterEquipesEliminadas = async (id_torneio, equipes, transaction) => {
       {
         model: Partida,
         as: "partida",
-        where: {
-          id_torneio,
-          status: "FINALIZADA",
-        },
+        where: { id_torneio, status: "FINALIZADA" },
         attributes: ["vencedor_id"],
       },
     ],
@@ -83,23 +61,8 @@ const obterEquipesEliminadas = async (id_torneio, equipes, transaction) => {
 };
 
 const validarPlacar = (placar) => {
-  if (placar === undefined || placar === null) return false;
-
-  if (typeof placar === "string") {
-    return placar.trim().length > 0;
-  }
-
-  if (typeof placar === "object" && !Array.isArray(placar)) {
-    const { time1, time2 } = placar;
-
-    if (typeof time1 !== "number" || typeof time2 !== "number") return false;
-    if (!Number.isInteger(time1) || !Number.isInteger(time2)) return false;
-    if (time1 < 0 || time2 < 0) return false;
-
-    return true;
-  }
-
-  return false;
+  if (typeof placar !== "string") return false;
+  return REGEX_PLACAR.test(placar.trim());
 };
 
 const filtrarConsultaPartidas = (filtros = {}) => {
@@ -154,81 +117,16 @@ export const createPartidaService = async (dados) => {
     });
     if (!torneio) throw new Error("Torneio não encontrado");
 
-    const faseInicialEsperada = getFaseInicialPorVagas(torneio.vagas);
-    if (!faseInicialEsperada) {
-      throw new Error(
-        "Quantidade de vagas inválida para definir a fase inicial do torneio",
-      );
-    }
-
-    const partidasExistentes = await Partida.findAll({
-      where: {
-        id_torneio,
-      },
-      attributes: ["fase", "status"],
-      transaction,
-    });
-
-    const faseAtualTorneio = getFaseAtualTorneio(torneio, partidasExistentes);
-    const novaFaseOrdinal = ORDEM_FASES[fase];
-
-    if (!faseAtualTorneio) {
-      if (fase !== faseInicialEsperada) {
-        throw new Error(
-          `Fase inicial esperada para este torneio é ${faseInicialEsperada}. Não é possível criar ${fase} neste momento`,
-        );
+    if (torneio.fase_atual) {
+      if (fase !== torneio.fase_atual) {
+        throw new Error(`Só é permitido criar partidas na fase atual do torneio: ${torneio.fase_atual.replace(/_/g, " ")}`);
       }
     } else {
-      if (fase !== faseAtualTorneio) {
-        throw new Error(
-          `Só é permitido criar partidas na fase atual do torneio: ${faseAtualTorneio}`,
-        );
+      const faseInicialEsperada = getFaseInicialPorVagas(torneio.vagas);
+      if (fase !== faseInicialEsperada) {
+        throw new Error(`A fase inicial para este torneio deve ser ${faseInicialEsperada}.`);
       }
-
-      const maiorFaseExistente = partidasExistentes.reduce((maior, partida) => {
-        return ORDEM_FASES[partida.fase] > ORDEM_FASES[maior] ? partida.fase : maior;
-      }, partidasExistentes[0].fase);
-
-      const maiorFaseOrdinal = ORDEM_FASES[maiorFaseExistente];
-
-      if (novaFaseOrdinal < maiorFaseOrdinal) {
-        throw new Error(
-          `Não é possível criar partidas em fases anteriores. Fase atual implícita: ${maiorFaseExistente}`,
-        );
-      }
-
-      if (novaFaseOrdinal > maiorFaseOrdinal + 1) {
-        throw new Error(
-          `Não é possível pular fases. Fase atual implícita: ${maiorFaseExistente}. Próxima esperada: ${
-            Object.entries(ORDEM_FASES).find(([_, v]) => v === maiorFaseOrdinal + 1)?.[0] ||
-            "NENHUMA"
-          }`,
-        );
-      }
-
-      if (novaFaseOrdinal > maiorFaseOrdinal) {
-        const partidasNaoFinalizadas = await Partida.count({
-          where: {
-            id_torneio,
-            fase: maiorFaseExistente,
-            status: {
-              [models.sequelize.Op.ne]: "FINALIZADA",
-            },
-          },
-          transaction,
-        });
-
-        if (partidasNaoFinalizadas > 0) {
-          throw new Error(
-            `Ainda existem partidas não finalizadas na fase de ${maiorFaseExistente.replace(/_/g, " ")}`,
-          );
-        }
-      }
-    }
-
-    if (!torneio.fase_atual) {
-      const faseAtualParaAtualizar = faseAtualTorneio || fase;
-      await torneio.update({ fase_atual: faseAtualParaAtualizar }, { transaction });
+      await torneio.update({ fase_atual: fase }, { transaction });
     }
 
     if (horario) {
@@ -244,25 +142,13 @@ export const createPartidaService = async (dados) => {
       throw new Error("Uma ou mais equipes não foram encontradas");
     }
 
-    const equipeForaDoTorneio = equipesEncontradas.some(
-      (equipe) => equipe.id_torneio !== id_torneio,
-    );
-
-    if (equipeForaDoTorneio) {
+    if (equipesEncontradas.some((equipe) => equipe.id_torneio !== id_torneio)) {
       throw new Error("Todas as equipes da partida devem pertencer ao torneio informado");
     }
 
-    const equipesEliminadas = await obterEquipesEliminadas(
-      id_torneio,
-      equipes,
-      transaction,
-    );
-
+    const equipesEliminadas = await obterEquipesEliminadas(id_torneio, equipes, transaction);
     if (equipesEliminadas.length > 0) {
-      throw new Error(
-        "Equipes eliminadas não podem ser usadas em novas partidas: " +
-          [...new Set(equipesEliminadas)].join(", "),
-      );
+      throw new Error(`Equipes eliminadas não podem jogar novas partidas: ${[...new Set(equipesEliminadas)].join(", ")}`);
     }
 
     const participacoesNaFase = await PartidaEquipe.findAll({
@@ -271,10 +157,7 @@ export const createPartidaService = async (dados) => {
         {
           model: Partida,
           as: "partida",
-          where: {
-            id_torneio,
-            fase,
-          },
+          where: { id_torneio, fase },
           attributes: ["id_partida"],
         },
       ],
@@ -283,32 +166,21 @@ export const createPartidaService = async (dados) => {
 
     if (participacoesNaFase.length > 0) {
       const equipesDuplicadas = participacoesNaFase.map((vinculo) => vinculo.id_equipe);
-      throw new Error(
-        "Equipes já possuem partida nesta fase: " +
-          [...new Set(equipesDuplicadas)].join(", "),
-      );
+      throw new Error(`Equipes já possuem partida nesta fase: ${[...new Set(equipesDuplicadas)].join(", ")}`);
     }
 
     const totalPartidasNaFase = await Partida.count({
-      where: {
-        id_torneio,
-        fase,
-      },
+      where: { id_torneio, fase },
       transaction,
     });
 
     const maxPartidas = obterMaxPartidasPorFase(torneio.vagas, fase);
     if (maxPartidas === null) {
-      throw new Error(
-        `Fase ${fase} não é válida para um torneio com ${torneio.vagas} usuários. ` +
-          `Fases válidas: ${fasesPorVagas(torneio.vagas).join(", ")}`,
-      );
+      throw new Error(`Fase ${fase} não é válida para um torneio com ${torneio.vagas} vagas.`);
     }
 
     if (totalPartidasNaFase >= maxPartidas) {
-      throw new Error(
-        `Não é possível criar mais partidas em ${fase.replace(/_/g, " ")}. Máximo permitido: ${maxPartidas}`,
-      );
+      throw new Error(`Limite de partidas atingido para a fase ${fase.replace(/_/g, " ")}. Máximo: ${maxPartidas}`);
     }
 
     const novaPartida = await Partida.create(
@@ -319,7 +191,6 @@ export const createPartidaService = async (dados) => {
         horario,
         placar: null,
         vencedor_id: null,
-        resultado: null,
       },
       { transaction },
     );
@@ -350,14 +221,9 @@ export const createPartidaService = async (dados) => {
 
 export const getPartidaByIdService = async (id) => {
   const partida = await Partida.findOne({
-    where: {
-      id_partida: id,
-    },
+    where: { id_partida: id },
     include: [
-      {
-        model: Torneio,
-        attributes: ["nome", "categoria"],
-      },
+      { model: Torneio, attributes: ["nome", "categoria"] },
       {
         model: PartidaEquipe,
         as: "equipesPartida",
@@ -385,18 +251,12 @@ export const getPartidaByIdService = async (id) => {
   return {
     id_partida: partida.id_partida,
     id_torneio: partida.id_torneio,
-    torneio: partida.Torneio
-      ? {
-          nome: partida.Torneio.nome,
-          categoria: partida.Torneio.categoria,
-        }
-      : null,
+    torneio: partida.Torneio ? { nome: partida.Torneio.nome, categoria: partida.Torneio.categoria } : null,
     fase: partida.fase,
-    status: partida.status,
-    horario: partida.horario,
-    placar: partida.placar,
-    vencedor_id: partida.vencedor_id,
-    resultado: partida.resultado,
+    status: p.status,
+    horario: p.horario,
+    placar: p.placar,
+    vencedor_id: p.vencedor_id,
     equipes: partida.equipesPartida.map((ep) => ({
       id_equipe: ep.equipe.id_equipe,
       nome: ep.equipe.nome,
@@ -406,17 +266,12 @@ export const getPartidaByIdService = async (id) => {
 };
 
 export const getAllPartidasService = async (filtros = {}) => {
-  const where = {
-    ...filtrarConsultaPartidas(filtros),
-  };
+  const where = { ...filtrarConsultaPartidas(filtros) };
 
   const partidas = await Partida.findAll({
     where,
     include: [
-      {
-        model: Torneio,
-        attributes: ["nome"],
-      },
+      { model: Torneio, attributes: ["nome"] },
       {
         model: PartidaEquipe,
         as: "equipesPartida",
@@ -459,7 +314,7 @@ export const updatePartidaService = async (id, dados) => {
   const partida = await Partida.findByPk(id);
   if (!partida) throw new Error("Partida não encontrada");
 
-  const camposPermitidos = ["fase", "status", "horario", "placar", "resultado"];
+  const camposPermitidos = ["fase", "status", "horario", "placar"];
   const dadosFiltrados = {};
 
   for (const campo of Object.keys(dados)) {
@@ -473,14 +328,9 @@ export const updatePartidaService = async (id, dados) => {
   }
 
   if (dadosFiltrados.fase) {
-    if (!FASES_VALIDAS.includes(dadosFiltrados.fase)) {
-      throw new Error("Fase da partida é inválida");
-    }
-
+    if (!FASES_VALIDAS.includes(dadosFiltrados.fase)) throw new Error("Fase da partida é inválida");
     if (dadosFiltrados.fase !== partida.fase) {
-      throw new Error(
-        "Não é possível alterar a fase de uma partida manualmente. Delete e recrie a partida na fase correta",
-      );
+      throw new Error("Não é possível alterar a fase de uma partida manualmente.");
     }
   }
 
@@ -497,9 +347,7 @@ export const updatePartidaService = async (id, dados) => {
   }
 
   if (dadosFiltrados.placar !== undefined && !validarPlacar(dadosFiltrados.placar)) {
-    throw new Error(
-      "Placar inválido. Use string não vazia ou objeto { time1: número, time2: número }",
-    );
+    throw new Error("Placar inválido. Use o formato padrão de texto (Ex: '2-1' ou '21-18')");
   }
 
   await partida.update(dadosFiltrados);
@@ -512,20 +360,15 @@ export const updatePartidaService = async (id, dados) => {
     horario: partida.horario,
     placar: partida.placar,
     vencedor_id: partida.vencedor_id,
-    resultado: partida.resultado,
   };
 };
 
 export const deletePartidaService = async (id) => {
   const partida = await Partida.findByPk(id);
   if (!partida) throw new Error("Partida não encontrada");
-
-  if (partida.status === "FINALIZADA") {
-    throw new Error("Não é possível deletar partidas finalizadas");
-  }
+  if (partida.status === "FINALIZADA") throw new Error("Não é possível deletar partidas finalizadas");
 
   await partida.destroy();
-
   return { message: "Partida deletada com sucesso" };
 };
 
@@ -537,11 +380,7 @@ export const agendarPartidaService = async (id, horario) => {
   await validarHorarioNoTorneio(partida.id_torneio, horario);
 
   await partida.update({ horario, status: "PENDENTE" });
-  return {
-    id_partida: partida.id_partida,
-    horario: partida.horario,
-    status: partida.status,
-  };
+  return { id_partida: partida.id_partida, horario: partida.horario, status: partida.status };
 };
 
 export const iniciarPartidaService = async (id) => {
@@ -555,27 +394,19 @@ export const iniciarPartidaService = async (id) => {
 
   const torneio = await Torneio.findByPk(partida.id_torneio);
   const agora = new Date();
-  if (agora < torneio.data_inicio) {
-    throw new Error("O torneio ainda não começou");
-  }
-  if (agora > torneio.data_fim) {
-    throw new Error("O torneio já terminou");
-  }
+  if (agora < torneio.data_inicio) throw new Error("O torneio ainda não começou");
+  if (agora > torneio.data_fim) throw new Error("O torneio já terminou");
 
   await partida.update({
     status: "EM_ANDAMENTO",
     horario: partida.horario || agora,
   });
 
-  return {
-    id_partida: partida.id_partida,
-    status: partida.status,
-    horario: partida.horario,
-  };
+  return { id_partida: partida.id_partida, status: partida.status, horario: partida.horario };
 };
 
 export const finalizarPartidaService = async (id, dados) => {
-  const { placar, vencedor_id, resultado } = dados;
+  const { placar, vencedor_id } = dados;
   if (!vencedor_id) throw new Error("Vencedor obrigatório");
 
   const transaction = await models.sequelize.transaction();
@@ -601,29 +432,20 @@ export const finalizarPartidaService = async (id, dados) => {
 
     const placarFinal = placar !== undefined ? placar : partida.placar;
     if (!validarPlacar(placarFinal)) {
-      throw new Error(
-        "Placar inválido. Use string não vazia ou objeto { time1: número, time2: número }",
-      );
+      throw new Error("Placar inválido. Use o formato padrão de texto (Ex: '2-1')");
     }
 
     await partida.update(
       {
-        placar: placarFinal,
+        placar: placarFinal.trim(),
         vencedor_id,
-        resultado: resultado || partida.resultado,
         status: "FINALIZADA",
       },
       { transaction },
     );
 
     const equipeVencedora = await Equipe.findByPk(vencedor_id, {
-      include: [
-        {
-          model: Usuario,
-          as: "membros",
-          attributes: ["id_usuario"],
-        },
-      ],
+      include: [{ model: Usuario, as: "membros", attributes: ["id_usuario"] }],
       transaction,
       lock: transaction.LOCK.UPDATE,
     });
@@ -640,22 +462,11 @@ export const finalizarPartidaService = async (id, dados) => {
     if (partida.fase === "FINAL") tipoEvento = "CAMPEAO";
 
     if (tipoEvento) {
-      const torneio = await Torneio.findByPk(partida.id_torneio, {
-        transaction,
-        lock: transaction.LOCK.UPDATE,
-      });
-
-      if (torneio && ORDEM_FASES[partida.fase] > ORDEM_FASES[torneio.fase_atual]) {
-        await torneio.update({ fase_atual: partida.fase }, { transaction });
-      }
-
       for (const membro of equipeVencedora.membros) {
         try {
           await atualizarPontuacaoService(membro.id_usuario, tipoEvento, { transaction });
         } catch (pontError) {
-          console.error(
-            `Erro ao atualizar pontuação do membro ${membro.id_usuario}: ${pontError.message}`,
-          );
+          console.error(`Erro ao atualizar pontuação do membro ${membro.id_usuario}: ${pontError.message}`);
         }
       }
     }
@@ -667,7 +478,6 @@ export const finalizarPartidaService = async (id, dados) => {
       status: partida.status,
       placar: partida.placar,
       vencedor_id: partida.vencedor_id,
-      resultado: partida.resultado,
     };
   } catch (error) {
     await transaction.rollback();
