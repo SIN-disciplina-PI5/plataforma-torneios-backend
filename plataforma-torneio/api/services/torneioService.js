@@ -5,22 +5,22 @@ import {
   normalizarTextoOpcional,
 } from "../utils/validation.js";
 import { notificarMembrosService } from "./notificacaoService.js";
+
 const {
   Torneio,
   Inscricao,
   Partida,
   PartidaEquipe,
   Equipe,
+  EquipeUsuario,
   Usuario,
   sequelize,
 } = models;
 
 const DURACAO_PARTIDA_MINUTOS = 30;
 
-// função auxiliar
 const calcularTempoMinimoTorneio = (vagas) => {
-  const totalPartidas = (Number(vagas) / 2) - 1;
-
+  const totalPartidas = Number(vagas) / 2 - 1;
   return totalPartidas * DURACAO_PARTIDA_MINUTOS;
 };
 
@@ -42,21 +42,23 @@ export const createTorneioService = async (dados) => {
   const fim = new Date(data_fim);
 
   if (isNaN(inicio) || isNaN(fim)) throw new Error("Datas inválidas");
-  if (fim <= inicio)
+  if (fim <= inicio) {
     throw new Error("Data de fim deve ser posterior à data de início");
+  }
 
   const vagasValidas = [4, 8, 16, 32];
-
-  if (!vagasValidas.includes(Number(vagas)))
+  if (!vagasValidas.includes(Number(vagas))) {
     throw new Error("As vagas devem ser 4, 8, 16 ou 32");
+  }
 
   const diferencaMinutos = (fim - inicio) / 60000;
   const tempoMinimo = calcularTempoMinimoTorneio(vagas);
 
-  if (diferencaMinutos < tempoMinimo)
+  if (diferencaMinutos < tempoMinimo) {
     throw new Error(
-      `O torneio precisa ter pelo menos ${tempoMinimo} minutos para ${vagas} equipes`,
+      `O torneio precisa ter pelo menos ${tempoMinimo} minutos para ${vagas} usuários`,
     );
+  }
 
   const torneioExistente = await Torneio.findOne({
     where: { nome },
@@ -137,8 +139,9 @@ export const updateTorneioService = async (id, dados) => {
   if (dados.vagas !== undefined) {
     const vagasValidas = [4, 8, 16, 32];
 
-    if (!vagasValidas.includes(Number(dados.vagas)))
+    if (!vagasValidas.includes(Number(dados.vagas))) {
       throw new Error("As vagas devem ser 4, 8, 16 ou 32");
+    }
   }
 
   if (dados.turno !== undefined) {
@@ -149,22 +152,22 @@ export const updateTorneioService = async (id, dados) => {
   const vagasFinais = dados.vagas ?? torneio.vagas;
 
   if (dados.data_inicio || dados.data_fim || dados.vagas) {
-    const inicio = dados.data_inicio
-      ? new Date(dados.data_inicio)
-      : torneio.data_inicio;
+    const inicio = dados.data_inicio ? new Date(dados.data_inicio) : torneio.data_inicio;
     const fim = dados.data_fim ? new Date(dados.data_fim) : torneio.data_fim;
 
     if (isNaN(inicio) || isNaN(fim)) throw new Error("Datas inválidas");
-    if (fim <= inicio)
+    if (fim <= inicio) {
       throw new Error("Data de fim deve ser posterior à data de início");
+    }
 
     const diferencaMinutos = (fim - inicio) / 60000;
     const tempoMinimo = calcularTempoMinimoTorneio(vagasFinais);
 
-    if (diferencaMinutos < tempoMinimo)
+    if (diferencaMinutos < tempoMinimo) {
       throw new Error(
-        `O torneio precisa ter pelo menos ${tempoMinimo} minutos para ${vagasFinais} equipes`,
+        `O torneio precisa ter pelo menos ${tempoMinimo} minutos para ${vagasFinais} usuários`,
       );
+    }
 
     dados.data_inicio = inicio;
     dados.data_fim = fim;
@@ -210,8 +213,9 @@ export const gerarChaveService = async (id_torneio) => {
     const torneio = await Torneio.findByPk(id_torneio, { transaction });
 
     if (!torneio) throw new Error("Torneio não encontrado");
-    if (new Date() > torneio.data_inicio)
+    if (new Date() > torneio.data_inicio) {
       throw new Error("Não é possível gerar a chave após o início do torneio");
+    }
 
     const partidasExistentes = await Partida.findOne({
       where: { id_torneio },
@@ -246,14 +250,16 @@ export const gerarChaveService = async (id_torneio) => {
       transaction,
     });
 
-    if (equipesBrutas.length < 2)
+    if (equipesBrutas.length < 2) {
       throw new Error("Não há equipes suficientes para gerar chave");
+    }
 
     const { equipes, soloRestante } = await resolverEquipesSoltas(
       equipesBrutas,
       transaction,
     );
-    const tamanhosValidos = [4, 8, 16];
+
+    const tamanhosValidos = [2, 4, 8, 16];
 
     if (soloRestante) {
       const idsUsuarios = soloRestante.membros.map((m) => m.id_usuario);
@@ -277,8 +283,9 @@ export const gerarChaveService = async (id_torneio) => {
       });
     }
 
-    if (!tamanhosValidos.includes(equipes.length))
+    if (!tamanhosValidos.includes(equipes.length)) {
       throw new Error("Número inválido de equipes após resolução de solos");
+    }
 
     const embaralhadas = equipes.sort(() => Math.random() - 0.5);
     const idsPartidasCriadas = [];
@@ -300,22 +307,28 @@ export const gerarChaveService = async (id_torneio) => {
           break;
       }
     }
+
     const totalPartidas = embaralhadas.length / 2;
 
     const ultimoHorario = new Date(
-      horarioAtual.getTime() +
-        (totalPartidas - 1) * DURACAO_PARTIDA_MINUTOS * 60000,
+      horarioAtual.getTime() + (totalPartidas - 1) * DURACAO_PARTIDA_MINUTOS * 60000,
     );
 
-    if (ultimoHorario > torneio.data_fim)
+    if (ultimoHorario > torneio.data_fim) {
       throw new Error(
         "O intervalo do torneio é insuficiente para agendar as partidas",
       );
+    }
 
-    let faseInicial = "OITAVAS_DE_FINAL";
+    let faseInicial = null;
+    if (equipes.length === 2) faseInicial = "FINAL";
     if (equipes.length === 4) faseInicial = "SEMI_FINAL";
     if (equipes.length === 8) faseInicial = "QUARTAS_DE_FINAL";
     if (equipes.length === 16) faseInicial = "OITAVAS_DE_FINAL";
+
+    if (!faseInicial) {
+      throw new Error("Número de equipes inválido para definir a fase inicial");
+    }
 
     for (let i = 0; i < embaralhadas.length; i += 2) {
       const partida = await Partida.create(
@@ -371,8 +384,9 @@ export const avancarFaseService = async (id_torneio) => {
   try {
     const torneio = await Torneio.findByPk(id_torneio, { transaction });
     if (!torneio) throw new Error("Torneio não encontrado");
-    if (!torneio.fase_atual)
+    if (!torneio.fase_atual) {
       throw new Error("Nenhuma partida foi gerada para este torneio ainda.");
+    }
 
     const faseAtual = torneio.fase_atual;
 
@@ -384,10 +398,11 @@ export const avancarFaseService = async (id_torneio) => {
       transaction,
     });
 
-    if (partidasNaFase === 0)
+    if (partidasNaFase === 0) {
       throw new Error(
         `Não há partidas geradas na fase atual: ${faseAtual.replace(/_/g, " ")}`,
       );
+    }
 
     const partidasPendentes = await Partida.count({
       where: {
@@ -400,8 +415,11 @@ export const avancarFaseService = async (id_torneio) => {
       transaction,
     });
 
-    if (partidasPendentes > 0)
-      throw new Error(`Ainda existem partidas não finalizadas na fase de ${faseAtual.replace(/_/g, " ")}`);
+    if (partidasPendentes > 0) {
+      throw new Error(
+        `Ainda existem partidas não finalizadas na fase de ${faseAtual.replace(/_/g, " ")}`,
+      );
+    }
 
     const mapaFases = {
       OITAVAS_DE_FINAL: "QUARTAS_DE_FINAL",
@@ -411,7 +429,9 @@ export const avancarFaseService = async (id_torneio) => {
 
     const proximaFase = mapaFases[faseAtual];
 
-    if (!proximaFase) throw new Error("O torneio já chegou na fase final ou foi concluído");
+    if (!proximaFase) {
+      throw new Error("O torneio já chegou na fase final ou foi concluído");
+    }
 
     const partidasProximaFase = await Partida.findOne({
       where: {
@@ -421,7 +441,9 @@ export const avancarFaseService = async (id_torneio) => {
       transaction,
     });
 
-    if (partidasProximaFase) throw new Error("A próxima fase já foi gerada");
+    if (partidasProximaFase) {
+      throw new Error("A próxima fase já foi gerada");
+    }
 
     const partidas = await Partida.findAll({
       where: {
@@ -434,14 +456,18 @@ export const avancarFaseService = async (id_torneio) => {
     });
 
     const vencedores = partidas.map((p) => {
-      if (!p.vencedor_id)
+      if (!p.vencedor_id) {
         throw new Error("Existem partidas sem vencedor definido");
+      }
 
       return p.vencedor_id;
     });
 
-    if (vencedores.length % 2 !== 0)
-      throw new Error("Número inválido de vencedores para formar os próximos confrontos");
+    if (vencedores.length % 2 !== 0) {
+      throw new Error(
+        "Número inválido de vencedores para formar os próximos confrontos",
+      );
+    }
 
     const ultimaPartidaDaFase = await Partida.findOne({
       where: {
@@ -452,8 +478,9 @@ export const avancarFaseService = async (id_torneio) => {
       transaction,
     });
 
-    if (!ultimaPartidaDaFase)
+    if (!ultimaPartidaDaFase) {
       throw new Error("Não foi possível determinar o último horário da fase atual");
+    }
 
     let horarioAtual = new Date(
       new Date(ultimaPartidaDaFase.horario).getTime() + DURACAO_PARTIDA_MINUTOS * 60000,
@@ -467,9 +494,7 @@ export const avancarFaseService = async (id_torneio) => {
     );
 
     if (ultimoHorario > torneio.data_fim) {
-      throw new Error(
-        "O intervalo do torneio é insuficiente para avançar a fase",
-      );
+      throw new Error("O intervalo do torneio é insuficiente para avançar a fase");
     }
 
     const idsNovasPartidas = [];
@@ -540,11 +565,11 @@ export const atualizarStatusService = async (id_torneio, status) => {
   };
 };
 
-//função auxiliar
 const resolverEquipesSoltas = async (equipes, transaction) => {
   const full = equipes.filter((e) => e.membros.length === 2);
   let solos = equipes.filter((e) => e.membros.length === 1);
   const result = [...full];
+
   while (solos.length > 1) {
     const e1 = solos.pop();
     const e2 = solos.pop();
