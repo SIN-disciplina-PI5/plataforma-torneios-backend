@@ -4,6 +4,7 @@ import {
   getEquipeUsuarioByIdService,
   deleteEquipeUsuarioService,
 } from "../services/equipeUsuarioService.js";
+import { getStatusCodeByError } from "../utils/errorHandler.js";
 
 export const createEquipeUsuario = async (req, res) => {
   try {
@@ -16,7 +17,8 @@ export const createEquipeUsuario = async (req, res) => {
       data: vinculo,
     });
   } catch (err) {
-    return res.status(400).json({ error: err.message });
+    const statusCode = getStatusCodeByError(err.message);
+    return res.status(statusCode).json({ error: err.message });
   }
 };
 
@@ -28,7 +30,8 @@ export const getAllEquipeUsuarios = async (req, res) => {
       data: vinculos,
     });
   } catch (err) {
-    return res.status(400).json({ error: err.message });
+    const statusCode = getStatusCodeByError(err.message);
+    return res.status(statusCode).json({ error: err.message });
   }
 };
 
@@ -37,7 +40,8 @@ export const getEquipeUsuarioById = async (req, res) => {
     const vinculo = await getEquipeUsuarioByIdService(req.params.id);
     return res.status(200).json({ data: vinculo });
   } catch (err) {
-    return res.status(404).json({ error: err.message });
+    const statusCode = getStatusCodeByError(err.message);
+    return res.status(statusCode).json({ error: err.message });
   }
 };
 
@@ -46,6 +50,7 @@ export const deleteEquipeUsuario = async (req, res) => {
     await deleteEquipeUsuarioService(req.params.id);
     return res.status(204).send();
   } catch (err) {
-    return res.status(400).json({ error: err.message });
+    const statusCode = getStatusCodeByError(err.message);
+    return res.status(statusCode).json({ error: err.message });
   }
 };

@@ -9,7 +9,12 @@ export default (sequelize) => {
     },
     nome: {
       type: DataTypes.STRING,
-      allowNull: true,
+      allowNull: false,
+      validate: { notEmpty: true, notWhitespace(value) {
+        if (typeof value !== "string" || !value.trim()) {
+          throw new Error("Nome da equipe não pode ser vazio");
+        }
+      } },
     },
     id_torneio: {
       type: DataTypes.UUID,
@@ -24,6 +29,12 @@ export default (sequelize) => {
   },
   {
     tableName: "Equipes",
+    indexes: [
+      {
+        unique: true,
+        fields: ["nome", "id_torneio"],
+      },
+    ],
   });
 
   return Equipe;

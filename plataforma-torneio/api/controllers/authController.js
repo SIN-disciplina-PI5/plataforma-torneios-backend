@@ -1,5 +1,6 @@
 import { loginService, logoutService } from "../services/authService.js";
 import { validarRecaptcha } from "../utils/recaptcha.js";
+import { getStatusCodeByError } from "../utils/errorHandler.js";
 
 export const login = async (req, res) => {
   try {
@@ -13,7 +14,8 @@ export const login = async (req, res) => {
     const token = await loginService(email, senha);
     return res.status(200).json({ token });
   } catch (e) {
-    return res.status(401).json({ error: e.message });
+    const statusCode = getStatusCodeByError(e.message);
+    return res.status(statusCode).json({ error: e.message });
   }
 };
 

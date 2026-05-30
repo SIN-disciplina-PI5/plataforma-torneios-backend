@@ -17,7 +17,6 @@ export default (sequelize) => {
     },
     fase: {
       type: DataTypes.ENUM(
-        "GRUPOS",
         "OITAVAS_DE_FINAL",
         "QUARTAS_DE_FINAL",
         "SEMI_FINAL",

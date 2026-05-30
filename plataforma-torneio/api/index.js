@@ -1,12 +1,12 @@
 import "dotenv/config";
 import cors from "cors";
 import express from "express";
-import * as models from "./models/index.js";  // Importação corrigida
+import * as models from "./models/index.js"; // Importação corrigida
 import routes from "./routes/index.js";
 
 const app = express();
-if (process.env.NODE_ENV !== 'test') {
-  app.set('trust proxy', true);
+if (process.env.NODE_ENV !== "test") {
+  app.set("trust proxy", true);
 }
 
 // CORS LIBERADO PARA WEB E MOBILE
@@ -14,19 +14,19 @@ app.use(cors());
 
 app.get("/", (req, res) => {
   res.send(
-    "<h1>API do Torneio Funcionando!</h1><p>Acesse as rotas de Torneios, Usuários, etc.</p>"
+    "<h1>API do Torneio Funcionando!</h1><p>Acesse as rotas de Torneios, Usuários, etc.</p>",
   );
 });
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: "10mb" }));
+app.use(express.urlencoded({ limit: "10mb", extended: true }));
 
 app.use("/api", routes);
 
 if (process.env.NODE_ENV !== "test") {
   models.sequelize
     .sync()
-    .then(() => console.log("Banco sincronizado com segurança ✅"))
+    .then(() => console.log("Banco sincronizado com segurança"))
     .catch((err) => console.error("Erro ao sincronizar banco:", err));
 
   const port = process.env.PORT ?? 4000;
@@ -34,4 +34,3 @@ if (process.env.NODE_ENV !== "test") {
 }
 
 export default app;
-

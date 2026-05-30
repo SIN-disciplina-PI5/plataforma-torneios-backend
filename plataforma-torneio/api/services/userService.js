@@ -1,19 +1,46 @@
 import models from "../models/index.js";
-const { Usuario, Ranking, EquipeUsuario, PartidaUsuario, Partida, Equipe, Torneio } = models;
+import {
+  normalizarTextoObrigatorio,
+  normalizarTextoOpcional,
+} from "../utils/validation.js";
+
+const validarSenhaForte = (senha) => {
+  const regex =
+    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&._-])[A-Za-z\d@$!%*?&._-]{8,}$/;
+
+  if (!regex.test(senha)) {
+    throw new Error(
+      "A senha deve ter no mínimo 8 caracteres, incluindo letra maiúscula, minúscula, número e caractere especial.",
+    );
+  }
+};
+const {
+  Usuario,
+  Ranking,
+} = models;
+
+const podeAcessarUsuario = (id, usuarioLogado = null) =>
+  usuarioLogado?.role === "ADMIN" || usuarioLogado?.id === id;
 
 export const createUsuarioService = async (dados) => {
-  const { nome, email, senha } = dados;
-  if (!nome) throw new Error("Nome é obrigatório");
-  if (!email) throw new Error("Email é obrigatório");
-  if (!senha) throw new Error("Senha é obrigatória");
+  const nome = normalizarTextoObrigatorio(dados.nome, "Nome");
+  const email = normalizarTextoObrigatorio(dados.email, "Email").toLowerCase();
+  const senha = normalizarTextoObrigatorio(dados.senha, "Senha");
+
+  validarSenhaForte(senha);
 
   const usuarioExistente = await Usuario.findOne({ where: { email } });
-  if (usuarioExistente) throw new Error("Email já cadastrado");
+
+  if (usuarioExistente) {
+    throw new Error("Email já cadastrado");
+  }
 
   const novoUsuario = await Usuario.create({
-    nome, email, senha,
+    nome,
+    email,
+    senha,
     role: "USER",
-    patente: "Iniciante"
+    patente: "Iniciante",
   });
 
   return {
@@ -22,54 +49,118 @@ export const createUsuarioService = async (dados) => {
     email: novoUsuario.email,
     role: novoUsuario.role,
     patente: novoUsuario.patente,
+    foto_perfil: novoUsuario.foto_perfil,
   };
 };
 
 export const getAllUsuariosService = async () => {
   const usuarios = await Usuario.findAll({
-    attributes: ["id_usuario", "nome", "email", "role", "patente"],
-    order: [["nome", "ASC"]]
+    attributes: [
+      "id_usuario",
+      "nome",
+      "email",
+      "role",
+      "patente",
+      "foto_perfil",
+    ],
+    order: [["nome", "ASC"]],
   });
   return usuarios;
 };
 
-export const getUsuarioByIdService = async (id) => {
+export const getUsuarioByIdService = async (id, usuarioLogado = null) => {
+  if (!podeAcessarUsuario(id, usuarioLogado)) throw new Error("Acesso negado");
+
   const usuario = await Usuario.findByPk(id, {
-    attributes: ["id_usuario", "nome", "email", "role", "patente"],
-    include: [{ model: Ranking, as: "ranking", attributes: ["pontos_acumulados", "posicao_atual"] }]
+    attributes: [
+      "id_usuario",
+      "nome",
+      "email",
+      "role",
+      "patente",
+      "foto_perfil",
+    ],
+    include: [
+      {
+        model: Ranking,
+        as: "ranking",
+        attributes: ["pontos_acumulados", "posicao_atual"],
+      },
+    ],
   });
   if (!usuario) throw new Error("Usuário não encontrado");
 
   const { ranking, ...dadosUsuario } = usuario.toJSON();
   return {
     ...dadosUsuario,
-    ranking: ranking ? {
-      pontos: ranking.pontos_acumulados,
-      posicao: ranking.posicao_atual,
-    } : null,
+    ranking: ranking
+      ? {
+          pontos: ranking.pontos_acumulados,
+          posicao: ranking.posicao_atual,
+        }
+      : null,
   };
 };
 
-export const updateUsuarioService = async (id, dados) => {
+export const updateUsuarioService = async (
+  id,
+  dados = {},
+  usuarioLogado = null,
+) => {
+  if (!podeAcessarUsuario(id, usuarioLogado)) throw new Error("Acesso negado");
+
   const usuario = await Usuario.findByPk(id);
   if (!usuario) throw new Error("Usuário não encontrado");
 
-  if (dados.email && dados.email !== usuario.email) {
-    const emailExistente = await Usuario.findOne({ where: { email: dados.email } });
-    if (emailExistente) throw new Error("Email já está em uso");
+  const camposPermitidos = ["nome", "email", "senha", "foto_perfil"];
+
+  if (usuarioLogado && usuarioLogado.role === "ADMIN") {
+    camposPermitidos.push("role", "patente");
+  }
+  for (const campo of Object.keys(dados)) {
+    if (!camposPermitidos.includes(campo)) {
+      throw new Error(`Campo ${campo} não pode ser alterado`);
+    }
+  }
+  const dadosFiltrados = {};
+  for (const campo of camposPermitidos) {
+    if (dados[campo] !== undefined) {
+      dadosFiltrados[campo] = dados[campo];
+    }
+  }
+  if (dadosFiltrados.nome !== undefined) {
+    dadosFiltrados.nome = normalizarTextoOpcional(dadosFiltrados.nome, "Nome");
+  }
+  if (dadosFiltrados.email !== undefined) {
+    dadosFiltrados.email = normalizarTextoOpcional(
+      dadosFiltrados.email,
+      "Email",
+    ).toLowerCase();
+  }
+  if (dadosFiltrados.senha !== undefined) {
+    dadosFiltrados.senha = normalizarTextoOpcional(
+      dadosFiltrados.senha,
+      "Senha",
+    );
+
+    validarSenhaForte(dadosFiltrados.senha);
   }
 
-  await usuario.update(dados);
+  await usuario.update(dadosFiltrados);
+
   return {
     id_usuario: usuario.id_usuario,
     nome: usuario.nome,
     email: usuario.email,
     role: usuario.role,
     patente: usuario.patente,
+    foto_perfil: usuario.foto_perfil,
   };
 };
 
-export const deleteUsuarioService = async (id) => {
+export const deleteUsuarioService = async (id, usuarioLogado = null) => {
+  if (!podeAcessarUsuario(id, usuarioLogado)) throw new Error("Acesso negado");
+
   const usuario = await Usuario.findByPk(id);
   if (!usuario) throw new Error("Usuário não encontrado");
   await usuario.destroy();

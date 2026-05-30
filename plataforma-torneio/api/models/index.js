@@ -1,5 +1,5 @@
 import "dotenv/config";
-import { Sequelize } from "sequelize";
+import { Sequelize, DataTypes } from "sequelize";
 import pg from "pg";
 
 import UsuarioModel from "./user.js";
@@ -10,18 +10,21 @@ import PartidaModel from "./partida.js";
 import EquipeModel from "./equipe.js";
 import EquipeUsuarioModel from "./equipeUsuario.js";
 import RankingModel from "./ranking.js";
-import PartidaUsuarioModel from "./partidaUsuario.js";
+import PartidaEquipeModel from "./partidaEquipe.js";
+import NotificacaoModel from "./notificacao.js";
 
 const sequelize = new Sequelize(process.env.POSTGRES_URL, {
   dialect: "postgres",
   protocol: "postgres",
   dialectOptions:
-    process.env.NODE_ENV === "test" ? {} : {
-      ssl: {
-        require: true,
-        rejectUnauthorized: false
-      }
-    },
+    process.env.NODE_ENV === "test"
+      ? {}
+      : {
+          ssl: {
+            require: true,
+            rejectUnauthorized: false,
+          },
+        },
   dialectModule: pg,
   logging: false,
 });
@@ -34,7 +37,8 @@ const Equipe = EquipeModel(sequelize);
 const EquipeUsuario = EquipeUsuarioModel(sequelize);
 const Ranking = RankingModel(sequelize);
 const Partida = PartidaModel(sequelize);
-const PartidaUsuario = PartidaUsuarioModel(sequelize);
+const PartidaEquipe = PartidaEquipeModel(sequelize);
+const Notificacao = NotificacaoModel(sequelize, DataTypes);
 
 Usuario.belongsToMany(Equipe, {
   through: EquipeUsuario,
@@ -96,20 +100,6 @@ Equipe.belongsTo(Torneio, {
   onUpdate: "CASCADE",
 });
 
-Equipe.hasMany(Inscricao, {
-  foreignKey: "id_equipe",
-  as: "inscricoes_equipe",
-  onDelete: "SET NULL",
-  onUpdate: "CASCADE",
-});
-
-Inscricao.belongsTo(Equipe, {
-  foreignKey: "id_equipe",
-  as: "equipe_dupla",
-  onDelete: "SET NULL",
-  onUpdate: "CASCADE",
-});
-
 Usuario.hasOne(Ranking, {
   foreignKey: "id_usuario",
   as: "ranking",
@@ -136,35 +126,50 @@ Partida.belongsTo(Torneio, {
   onUpdate: "CASCADE",
 });
 
-Partida.hasMany(PartidaUsuario, {
+Partida.hasMany(PartidaEquipe, {
   foreignKey: "id_partida",
   as: "equipesPartida",
   onDelete: "CASCADE",
   onUpdate: "CASCADE",
 });
 
-PartidaUsuario.belongsTo(Partida, {
+PartidaEquipe.belongsTo(Partida, {
   foreignKey: "id_partida",
   as: "partida",
   onDelete: "CASCADE",
   onUpdate: "CASCADE",
 });
 
-Equipe.hasMany(PartidaUsuario, {
+Equipe.hasMany(PartidaEquipe, {
   foreignKey: "id_equipe",
   as: "partidasEquipe",
   onDelete: "CASCADE",
   onUpdate: "CASCADE",
 });
 
-PartidaUsuario.belongsTo(Equipe, {
+PartidaEquipe.belongsTo(Equipe, {
   foreignKey: "id_equipe",
   as: "equipe",
   onDelete: "CASCADE",
   onUpdate: "CASCADE",
 });
 
+Usuario.hasMany(Notificacao, {
+  foreignKey: "id_usuario",
+  as: "notificacoes",
+  onDelete: "CASCADE",
+  onUpdate: "CASCADE",
+});
+
+Notificacao.belongsTo(Usuario, {
+  foreignKey: "id_usuario",
+  as: "usuario",
+  onDelete: "CASCADE",
+  onUpdate: "CASCADE",
+});
+
 export default {
+  sequelize,
   Usuario,
   Torneio,
   Inscricao,
@@ -173,7 +178,8 @@ export default {
   EquipeUsuario,
   Ranking,
   Partida,
-  PartidaUsuario,
+  PartidaEquipe,
+  Notificacao,
 };
 
 export { sequelize };

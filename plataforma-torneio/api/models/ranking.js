@@ -32,6 +32,12 @@ export default (sequelize) => {
     },
     {
       tableName: "Rankings",
+      indexes: [
+        {
+          unique: true,
+          fields: ["id_usuario"],
+        },
+      ],
     }
   );
 };

@@ -10,21 +10,52 @@ export default (sequelize) => {
     nome: {
       type: DataTypes.STRING,
       allowNull: false,
-      validate: { notEmpty: true },
+      validate: { notEmpty: true, notWhitespace(value) {
+        if (typeof value !== "string" || !value.trim()) {
+          throw new Error("Nome do torneio não pode ser vazio");
+        }
+      } },
     },
     categoria: {
       type: DataTypes.STRING,
       allowNull: false,
-      validate: { notEmpty: true },
+      validate: { notEmpty: true, notWhitespace(value) {
+        if (typeof value !== "string" || !value.trim()) {
+          throw new Error("Categoria não pode ser vazia");
+        }
+      } },
     },
     vagas: {
       type: DataTypes.INTEGER,
       allowNull: false,
-      validate: { notEmpty: true, isInt: true, min: 0, max: 64 },
+      validate: { notEmpty: true, isInt: true, min: 0, max: 32 },
     },
     status: {
       type: DataTypes.BOOLEAN,
       allowNull: false,
+    },
+    data_inicio: {
+      type: DataTypes.DATE,
+      allowNull: false,
+    },
+    data_fim: {
+      type: DataTypes.DATE,
+      allowNull: false,
+    },
+    turno: {
+      type: DataTypes.ENUM("MANHA", "TARDE", "NOITE"),
+      allowNull: false,
+      validate: {
+        isIn: {
+          args: [["MANHA", "TARDE", "NOITE"]],
+          msg: "Turno inválido",
+        },
+      },
+    },
+    fase_atual: {
+      type: DataTypes.ENUM("OITAVAS_DE_FINAL", "QUARTAS_DE_FINAL", "SEMI_FINAL", "FINAL"),
+      allowNull: true,
+      defaultValue: null,
     },
   });
 };

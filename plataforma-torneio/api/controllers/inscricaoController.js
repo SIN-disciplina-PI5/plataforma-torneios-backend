@@ -1,18 +1,24 @@
-import { 
+import {
   createInscricaoService,
   getAllInscricoesService,
   getInscricaoByIdService,
   updateInscricaoService,
   deleteInscricaoService,
-  getInscricoesByTorneioService
+  getInscricoesByTorneioService,
 } from "../services/inscricaoService.js";
+import { getStatusCodeByError } from "../utils/errorHandler.js";
 
 export const createInscricao = async (req, res) => {
   try {
-    const inscricao = await createInscricaoService(req.body);
+    const id_usuario =
+      req.user.role === "ADMIN" && req.body.id_usuario
+        ? req.body.id_usuario
+        : req.user.id;
+    const inscricao = await createInscricaoService({ ...req.body, id_usuario });
     res.status(201).json(inscricao);
   } catch (error) {
-    res.status(400).json({ error: error.message });
+    const statusCode = getStatusCodeByError(error.message);
+    res.status(statusCode).json({ error: error.message });
   }
 };
 
@@ -28,30 +34,33 @@ export const getAllInscricoes = async (req, res) => {
 export const getInscricaoById = async (req, res) => {
   try {
     const { id_inscricao } = req.params;
-    const inscricao = await getInscricaoByIdService(id_inscricao);
+    const inscricao = await getInscricaoByIdService(id_inscricao, req.user);
     res.status(200).json(inscricao);
   } catch (error) {
-    res.status(404).json({ error: error.message });
+    const statusCode = getStatusCodeByError(error.message);
+    res.status(statusCode).json({ error: error.message });
   }
 };
 
 export const updateInscricao = async (req, res) => {
   try {
     const { id_inscricao } = req.params;
-    const inscricao = await updateInscricaoService(id_inscricao, req.body);
+    const inscricao = await updateInscricaoService(id_inscricao, req.body, req.user);
     res.status(200).json(inscricao);
   } catch (error) {
-    res.status(400).json({ error: error.message });
+    const statusCode = getStatusCodeByError(error.message);
+    res.status(statusCode).json({ error: error.message });
   }
 };
 
 export const deleteInscricao = async (req, res) => {
   try {
     const { id_inscricao } = req.params;
-    const result = await deleteInscricaoService(id_inscricao);
+    const result = await deleteInscricaoService(id_inscricao, req.user);
     res.status(200).json(result);
   } catch (error) {
-    res.status(404).json({ error: error.message });
+    const statusCode = getStatusCodeByError(error.message);
+    res.status(statusCode).json({ error: error.message });
   }
 };
 

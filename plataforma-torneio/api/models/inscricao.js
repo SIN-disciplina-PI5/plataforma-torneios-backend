@@ -27,28 +27,24 @@ export default (sequelize) => {
       onUpdate: "CASCADE",
       onDelete: "CASCADE",
     },
-    id_equipe: {
-      type: DataTypes.UUID,
-      allowNull: true,
-      references: {
-        model: "Equipes",
-        key: "id_equipe",
-      },
-      onUpdate: "CASCADE",
-      onDelete: "SET NULL",
-    },
     data_inscricao: {
       type: DataTypes.DATE,
       allowNull: false,
       defaultValue: DataTypes.NOW,
     },
     status: {
-      type: DataTypes.ENUM("AGUARDANDO", "APROVADA", "REJEITADA"),
+      type: DataTypes.BOOLEAN,
       allowNull: false,
-      defaultValue: "AGUARDANDO",
+      defaultValue: true,
     },
   },
   {
     tableName: "Inscricoes",
+    indexes: [
+      {
+        unique: true,
+        fields: ["id_usuario", "id_torneio"],
+      },
+    ],
   });
 };
