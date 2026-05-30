@@ -19,6 +19,24 @@ const {
 
 const DURACAO_PARTIDA_MINUTOS = 30;
 
+export const obterHorarioInicioReal = (torneio) => {
+  const horario = new Date(torneio.data_inicio);
+
+  switch (String(torneio.turno)) {
+    case "MANHA":
+      horario.setHours(8, 0, 0, 0);
+      break;
+    case "TARDE":
+      horario.setHours(13, 0, 0, 0);
+      break;
+    case "NOITE":
+      horario.setHours(18, 0, 0, 0);
+      break;
+  }
+
+  return horario;
+};
+
 const calcularTempoMinimoTorneio = (vagas) => {
   const totalPartidas = Number(vagas) / 2 - 1;
   return totalPartidas * DURACAO_PARTIDA_MINUTOS;
@@ -146,13 +164,16 @@ export const updateTorneioService = async (id, dados) => {
 
   if (dados.turno !== undefined) {
     const valoresTurno = ["MANHA", "TARDE", "NOITE"];
-    if (!valoresTurno.includes(String(dados.turno))) throw new Error("Turno inválido");
+    if (!valoresTurno.includes(String(dados.turno)))
+      throw new Error("Turno inválido");
   }
 
   const vagasFinais = dados.vagas ?? torneio.vagas;
 
   if (dados.data_inicio || dados.data_fim || dados.vagas) {
-    const inicio = dados.data_inicio ? new Date(dados.data_inicio) : torneio.data_inicio;
+    const inicio = dados.data_inicio
+      ? new Date(dados.data_inicio)
+      : torneio.data_inicio;
     const fim = dados.data_fim ? new Date(dados.data_fim) : torneio.data_fim;
 
     if (isNaN(inicio) || isNaN(fim)) throw new Error("Datas inválidas");
@@ -213,8 +234,10 @@ export const gerarChaveService = async (id_torneio) => {
     const torneio = await Torneio.findByPk(id_torneio, { transaction });
 
     if (!torneio) throw new Error("Torneio não encontrado");
-    if (new Date() > torneio.data_inicio) {
-      throw new Error("Não é possível gerar a chave após o início do torneio");
+    const horarioInicioReal = obterHorarioInicioReal(torneio);
+
+    if (new Date() < horarioInicioReal) {
+      throw new Error("A chave só pode ser gerada após o início do torneio");
     }
 
     const partidasExistentes = await Partida.findOne({
@@ -311,7 +334,8 @@ export const gerarChaveService = async (id_torneio) => {
     const totalPartidas = embaralhadas.length / 2;
 
     const ultimoHorario = new Date(
-      horarioAtual.getTime() + (totalPartidas - 1) * DURACAO_PARTIDA_MINUTOS * 60000,
+      horarioAtual.getTime() +
+        (totalPartidas - 1) * DURACAO_PARTIDA_MINUTOS * 60000,
     );
 
     if (ultimoHorario > torneio.data_fim) {
@@ -479,11 +503,14 @@ export const avancarFaseService = async (id_torneio) => {
     });
 
     if (!ultimaPartidaDaFase) {
-      throw new Error("Não foi possível determinar o último horário da fase atual");
+      throw new Error(
+        "Não foi possível determinar o último horário da fase atual",
+      );
     }
 
     let horarioAtual = new Date(
-      new Date(ultimaPartidaDaFase.horario).getTime() + DURACAO_PARTIDA_MINUTOS * 60000,
+      new Date(ultimaPartidaDaFase.horario).getTime() +
+        DURACAO_PARTIDA_MINUTOS * 60000,
     );
 
     const totalNovasPartidas = vencedores.length / 2;
@@ -494,7 +521,9 @@ export const avancarFaseService = async (id_torneio) => {
     );
 
     if (ultimoHorario > torneio.data_fim) {
-      throw new Error("O intervalo do torneio é insuficiente para avançar a fase");
+      throw new Error(
+        "O intervalo do torneio é insuficiente para avançar a fase",
+      );
     }
 
     const idsNovasPartidas = [];

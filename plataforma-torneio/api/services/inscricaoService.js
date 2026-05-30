@@ -1,5 +1,6 @@
 import models, { sequelize } from "../models/index.js";
 import { sairDaEquipeService } from "./equipeService.js";
+import { obterHorarioInicioReal } from "./torneioService.js";
 
 const { Inscricao, Torneio, Usuario, Equipe } = models;
 
@@ -24,6 +25,10 @@ export const createInscricaoService = async (data) => {
     });
     if (!torneio) throw new Error("Torneio não encontrado");
     if (!torneio.status) throw new Error("Torneio não está ativo para inscrições");
+
+    const horarioInicioReal = obterHorarioInicioReal(torneio);
+    if (new Date() >= horarioInicioReal) throw new Error("Não é possível se inscrever após o início do torneio");
+    
 
     const inscricaoExistente = await Inscricao.findOne({
       where: { id_usuario, id_torneio },
@@ -125,7 +130,8 @@ export const getInscricaoByIdService = async (id, usuarioLogado = null) => {
   });
 
   if (!inscricao) throw new Error("Inscrição não encontrada");
-  if (!podeAcessarInscricao(inscricao, usuarioLogado)) throw new Error("Acesso negado");
+  if (!podeAcessarInscricao(inscricao, usuarioLogado))
+    throw new Error("Acesso negado");
 
   return {
     id_inscricao: inscricao.id_inscricao,
@@ -133,7 +139,7 @@ export const getInscricaoByIdService = async (id, usuarioLogado = null) => {
     usuario: inscricao.usuario || { id: inscricao.id_usuario },
     torneio: inscricao.torneio || { id: inscricao.id_torneio },
     dupla: null,
-    data_inscricao: inscricao.data_inscricao,
+    data_inscricao: i.data_inscricao,
   };
 };
 
@@ -165,7 +171,9 @@ export const updateInscricaoService = async (id, data, usuarioLogado) => {
         transaction,
       });
       if (totalAtivas >= torneio.vagas) {
-        throw new Error("Não há vagas disponíveis para reativar esta inscrição");
+        throw new Error(
+          "Não há vagas disponíveis para reativar esta inscrição",
+        );
       }
     }
 
@@ -191,6 +199,14 @@ export const deleteInscricaoService = async (id, usuarioLogado = null) => {
   const inscricao = await Inscricao.findByPk(id);
 
   if (!inscricao) throw new Error("Inscrição não encontrada");
+
+  const torneio = await Torneio.findByPk(inscricao.id_torneio);
+
+  if (!torneio) throw new Error("Torneio não encontrado");
+
+  const horarioInicioReal = obterHorarioInicioReal(torneio);
+  if (new Date() >= horarioInicioReal) throw new Error("Não é possível cancelar a inscrição após o início do torneio",);
+  
   if (!podeAcessarInscricao(inscricao, usuarioLogado)) throw new Error("Acesso negado");
 
   const equipe = await Equipe.findOne({
