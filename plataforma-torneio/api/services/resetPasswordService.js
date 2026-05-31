@@ -26,11 +26,7 @@ export const forgotPasswordService = async (email) => {
     where: { email },
   });
 
-  if (!usuario) {
-    return {
-      message: RESET_PASSWORD_SUCCESS_MESSAGE,
-    };
-  }
+  if (!usuario) { return { message: RESET_PASSWORD_SUCCESS_MESSAGE, }; }
 
   const resetToken = crypto.randomInt(100000, 1000000).toString();
 
