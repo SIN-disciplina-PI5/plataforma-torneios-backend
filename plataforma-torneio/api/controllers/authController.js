@@ -4,13 +4,15 @@ import { getStatusCodeByError } from "../utils/errorHandler.js";
 
 export const login = async (req, res) => {
   try {
+
     const { email, senha, recaptchaToken } = req.body;
-    if (recaptchaToken) {
-         await validarRecaptcha(recaptchaToken);
-    } 
-    if (!recaptchaToken) {
-      return res.status(400).json({ error: "Recaptcha obrigatório" });
-    }
+    // if (recaptchaToken) {
+    //      await validarRecaptcha(recaptchaToken);
+    // } 
+    // if (!recaptchaToken) {
+    //   return res.status(400).json({ error: "Recaptcha obrigatório" });
+    // }
+    // console.log("Recaptcha Token:", recaptchaToken);
     const token = await loginService(email, senha);
     return res.status(200).json({ token });
   } catch (e) {
