@@ -253,10 +253,10 @@ export const getPartidaByIdService = async (id) => {
     id_torneio: partida.id_torneio,
     torneio: partida.Torneio ? { nome: partida.Torneio.nome, categoria: partida.Torneio.categoria } : null,
     fase: partida.fase,
-    status: p.status,
-    horario: p.horario,
-    placar: p.placar,
-    vencedor_id: p.vencedor_id,
+    status: partida.status,
+    horario: partida.horario,
+    placar: partida.placar,
+    vencedor_id: partida.vencedor_id,
     equipes: partida.equipesPartida.map((ep) => ({
       id_equipe: ep.equipe.id_equipe,
       nome: ep.equipe.nome,
@@ -412,11 +412,10 @@ export const finalizarPartidaService = async (id, dados) => {
   const transaction = await models.sequelize.transaction();
 
   try {
-    const partida = await Partida.findOne({
-      where: { id_partida: id },
-      include: [{ model: PartidaEquipe, as: "equipesPartida", required: true }],
+    // 1. Bloqueia APENAS a partida (sem nenhum include/join)
+    const partida = await Partida.findByPk(id, {
       transaction,
-      lock: transaction.LOCK.UPDATE,
+      lock: transaction.LOCK.UPDATE, // Aqui funciona perfeitamente porque é uma tabela única
     });
 
     if (!partida) throw new Error("Partida não encontrada");
@@ -425,7 +424,13 @@ export const finalizarPartidaService = async (id, dados) => {
       throw new Error("Apenas partidas em andamento podem ser finalizadas");
     }
 
-    const equipesDaPartida = partida.equipesPartida.map((vinculo) => vinculo.id_equipe);
+    // 2. Busca as equipes da partida sem LOCK
+    const equipesPartida = await PartidaEquipe.findAll({
+      where: { id_partida: id },
+      transaction,
+    });
+
+    const equipesDaPartida = equipesPartida.map((vinculo) => vinculo.id_equipe);
     if (!equipesDaPartida.includes(vencedor_id)) {
       throw new Error("Equipe vencedora não participa desta partida");
     }
@@ -435,6 +440,7 @@ export const finalizarPartidaService = async (id, dados) => {
       throw new Error("Placar inválido. Use o formato padrão de texto (Ex: '2-1')");
     }
 
+    // 3. Atualiza a partida
     await partida.update(
       {
         placar: placarFinal.trim(),
@@ -444,10 +450,11 @@ export const finalizarPartidaService = async (id, dados) => {
       { transaction },
     );
 
+    // 4. CORREÇÃO AQUI: Removemos o lock desta query para evitar o erro do Outer Join
     const equipeVencedora = await Equipe.findByPk(vencedor_id, {
       include: [{ model: Usuario, as: "membros", attributes: ["id_usuario"] }],
-      transaction,
-      lock: transaction.LOCK.UPDATE,
+      transaction, 
+      // lock: transaction.LOCK.UPDATE -> REMOVIDO! Não é necessário travar os usuários aqui.
     });
 
     if (!equipeVencedora) throw new Error("Equipe vencedora não encontrada");
@@ -455,6 +462,7 @@ export const finalizarPartidaService = async (id, dados) => {
       throw new Error("Equipe vencedora não pertence ao torneio da partida");
     }
 
+    // 5. Distribuição de pontos
     let tipoEvento = null;
     if (partida.fase === "OITAVAS_DE_FINAL") tipoEvento = "AVANCO_FASE";
     if (partida.fase === "QUARTAS_DE_FINAL") tipoEvento = "AVANCO_FASE";
@@ -464,6 +472,7 @@ export const finalizarPartidaService = async (id, dados) => {
     if (tipoEvento) {
       for (const membro of equipeVencedora.membros) {
         try {
+          // O seu serviço de pontuação já vai rodar dentro da transação e fará os updates necessários
           await atualizarPontuacaoService(membro.id_usuario, tipoEvento, { transaction });
         } catch (pontError) {
           console.error(`Erro ao atualizar pontuação do membro ${membro.id_usuario}: ${pontError.message}`);
