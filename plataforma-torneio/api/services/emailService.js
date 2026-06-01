@@ -10,7 +10,7 @@ const transporter = nodemailer.createTransport({
 
 export const sendResetPasswordEmail = async (email, resetToken) => {
   const mailOptions = {
-    from: `"Sistema" <${process.env.EMAIL_USER}>`,
+    from: `"Arena Lagoa Beach" <${process.env.EMAIL_USER}>`,
     to: email,
     subject: "Código de Recuperação de Senha",
     html: `
