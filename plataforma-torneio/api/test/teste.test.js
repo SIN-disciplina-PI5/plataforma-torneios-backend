@@ -6,7 +6,7 @@ const { Usuario, Torneio, Inscricao, Equipe, EquipeUsuario, Partida, PartidaUsua
 // Importa todos os serviços
 import { loginService, logoutService, verificarTokenService } from "../services/authService.js";
 import { createUsuarioService, getAllUsuariosService, getUsuarioByIdService, updateUsuarioService, deleteUsuarioService } from "../services/userService.js";
-import { createTorneioService, gerarChaveService, avancarFaseService, atualizarStatusService, getTorneioByIdService } from "../services/torneioService.js";
+import { createTorneioService, gerarChaveService, avancarFaseService, atualizarStatusService, getTorneioByIdService, updateTorneioService } from "../services/torneioService.js";
 import { createInscricaoService, updateInscricaoService, getInscricoesByTorneioService } from "../services/inscricaoService.js";
 import { createEquipeService, entrarNaEquipeService, sairDaEquipeService, getAllEquipesService } from "../services/equipeService.js";
 import { atualizarPontuacaoService, getRankingUsuarioService, getRankingGeralService } from "../services/rankingService.js";
@@ -274,6 +274,25 @@ describe("Testes de exceção e validação", () => {
         data_fim
       })).rejects.toThrow("As vagas devem ser 4, 8, 16 ou 32");
     });
+
+    test("Após o início do torneio só deve ser possível alterar a data de fim", async () => {
+      const data_inicio = new Date(Date.now() - 24 * 60 * 60 * 1000);
+      const data_fim = new Date(Date.now() + 10 * 24 * 60 * 60 * 1000);
+      const torneio = await createTorneioService({
+        nome: "Torneio Pós Início", 
+        categoria: "Duplas", 
+        vagas: 4,
+        data_inicio,
+        data_fim,
+      });
+
+      await expect(updateTorneioService(torneio.id_torneio, { nome: "Novo Nome" }))
+        .rejects.toThrow("Após o início do torneio só é permitido alterar a data de fim");
+
+      const novaDataFim = new Date(Date.now() + 20 * 24 * 60 * 60 * 1000);
+      const atualizado = await updateTorneioService(torneio.id_torneio, { data_fim: novaDataFim });
+      expect(new Date(atualizado.data_fim).getTime()).toBe(novaDataFim.getTime());
+    });
   });
 
   describe("Validações de Inscrição", () => {
@@ -318,6 +337,23 @@ describe("Testes de exceção e validação", () => {
       
       await expect(createEquipeService(torneio.id_torneio, userNovo.id_usuario, "Equipe Proibida"))
         .rejects.toThrow("Usuário precisa estar aprovado no torneio");
+    });
+
+    test("Não deve permitir criar equipe a partir de 2 dias antes do início do torneio", async () => {
+      const data_inicio = new Date(Date.now() + 47 * 60 * 60 * 1000);
+      const data_fim = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+      const torneio = await createTorneioService({
+        nome: "Torneio Bloqueio Duplas", 
+        categoria: "Duplas", 
+        vagas: 4,
+        data_inicio,
+        data_fim,
+      });
+      const user = await createUsuarioService({ nome: "Bloqueio", email: "bloqueio@teste.com", senha: "123" });
+      await Inscricao.create({ id_usuario: user.id_usuario, id_torneio: torneio.id_torneio, status: true });
+
+      await expect(createEquipeService(torneio.id_torneio, user.id_usuario, "Equipe Tardia"))
+        .rejects.toThrow("Não é possível alterar as duplas a partir de 2 dias antes do início do torneio");
     });
   });
 
@@ -426,6 +462,39 @@ describe("Testes de exceção e validação", () => {
       
       await expect(gerarChaveService(t.id_torneio))
         .rejects.toThrow("Não é possível gerar a chave após o início do torneio");
+    });
+
+    test("Deve permitir regenerar a chave antes do início do torneio se todas as partidas ainda estiverem pendentes", async () => {
+      const data_inicio = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+      const data_fim = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
+      const t = await createTorneioService({
+        nome: "Torneio Regenerar Chave", 
+        categoria: "Duplas", 
+        vagas: 4,
+        data_inicio,
+        data_fim,
+      });
+
+      const users = [];
+      for (let i = 0; i < 4; i += 1) {
+        const user = await createUsuarioService({ nome: `Reg${i}`, email: `reg${i}@teste.com`, senha: "123" });
+        users.push(user);
+        await createInscricaoService({ id_usuario: user.id_usuario, id_torneio: t.id_torneio });
+      }
+
+      const equipe1 = await createEquipeService(t.id_torneio, users[0].id_usuario, "Equipe R1");
+      await entrarNaEquipeService(t.id_torneio, users[1].id_usuario, equipe1.id_equipe);
+      const equipe2 = await createEquipeService(t.id_torneio, users[2].id_usuario, "Equipe R2");
+      await entrarNaEquipeService(t.id_torneio, users[3].id_usuario, equipe2.id_equipe);
+
+      await gerarChaveService(t.id_torneio);
+      const antes = await Partida.count({ where: { id_torneio: t.id_torneio } });
+      expect(antes).toBe(2);
+
+      const partidas = await gerarChaveService(t.id_torneio);
+      expect(partidas.length).toBe(2);
+      const depois = await Partida.count({ where: { id_torneio: t.id_torneio } });
+      expect(depois).toBe(2);
     });
 
     test("Não deve agendar partida com horário fora do período do torneio", async () => {

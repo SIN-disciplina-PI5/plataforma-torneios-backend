@@ -18,6 +18,8 @@ const {
 } = models;
 
 const DURACAO_PARTIDA_MINUTOS = 30;
+const UM_DIA_EM_MS = 24 * 60 * 60 * 1000;
+const DOIS_DIAS_EM_MS = 2 * UM_DIA_EM_MS;
 
 export const obterHorarioInicioReal = (torneio) => {
   const horario = new Date(torneio.data_inicio);
@@ -35,6 +37,12 @@ export const obterHorarioInicioReal = (torneio) => {
   }
 
   return horario;
+};
+
+export const estaNoPeriodoDeBloqueioInscricaoOuDuplas = (torneio) => {
+  const horarioInicioReal = obterHorarioInicioReal(torneio);
+  const agora = new Date();
+  return agora >= new Date(horarioInicioReal.getTime() - DOIS_DIAS_EM_MS);
 };
 
 const calcularTempoMinimoTorneio = (vagas) => {
@@ -146,6 +154,52 @@ export const updateTorneioService = async (id, dados) => {
 
   if (!torneio) throw new Error("Torneio não encontrado");
 
+  const horarioInicioReal = obterHorarioInicioReal(torneio);
+  const agora = new Date();
+  const torneioIniciado = agora >= horarioInicioReal;
+
+  if (torneioIniciado) {
+    const camposPermitidos = Object.keys(dados);
+    const camposInvalidos = camposPermitidos.filter((campo) => campo !== "data_fim");
+
+    if (camposInvalidos.length > 0) {
+      throw new Error("Após o início do torneio só é permitido alterar a data de fim");
+    }
+
+    if (dados.data_fim === undefined) {
+      throw new Error("Após o início do torneio só é permitido alterar a data de fim");
+    }
+
+    const fim = new Date(dados.data_fim);
+    if (isNaN(fim)) throw new Error("Datas inválidas");
+    if (fim <= torneio.data_inicio) {
+      throw new Error("Data de fim deve ser posterior à data de início");
+    }
+
+    const diferencaMinutos = (fim - torneio.data_inicio) / 60000;
+    const tempoMinimo = calcularTempoMinimoTorneio(torneio.vagas);
+
+    if (diferencaMinutos < tempoMinimo) {
+      throw new Error(
+        `O torneio precisa ter pelo menos ${tempoMinimo} minutos para ${torneio.vagas} participantes`,
+      );
+    }
+
+    await torneio.update({ data_fim: fim });
+
+    return {
+      id_torneio: torneio.id_torneio,
+      nome: torneio.nome,
+      categoria: torneio.categoria,
+      vagas: torneio.vagas,
+      status: torneio.status,
+      data_inicio: torneio.data_inicio,
+      data_fim: torneio.data_fim,
+      turno: torneio.turno,
+      fase_atual: torneio.fase_atual,
+    };
+  }
+
   if (dados.nome !== undefined) {
     dados.nome = normalizarTextoOpcional(dados.nome, "Nome do torneio");
   }
@@ -227,6 +281,10 @@ export const deleteTorneioService = async (id) => {
   return { message: "Torneio deletado com sucesso" };
 };
 
+// notificarTorneioTresDiasAntesService foi removida — notificações 3 dias antes
+// ficam fora do escopo atual. Se precisarmos reaplicar esse comportamento,
+// é possível reintroduzir a função e conectar a um agendador/endpoint.
+
 export const gerarChaveService = async (id_torneio) => {
   const transaction = await sequelize.transaction();
 
@@ -235,17 +293,36 @@ export const gerarChaveService = async (id_torneio) => {
 
     if (!torneio) throw new Error("Torneio não encontrado");
     const horarioInicioReal = obterHorarioInicioReal(torneio);
+    const agora = new Date();
 
-    if (new Date() < horarioInicioReal) {
-      throw new Error("A chave só pode ser gerada após o início do torneio");
+    if (agora >= horarioInicioReal) {
+      throw new Error("Não é possível gerar a chave após o início do torneio");
     }
 
-    const partidasExistentes = await Partida.findOne({
+    const partidasExistentes = await Partida.findAll({
       where: { id_torneio },
       transaction,
     });
 
-    if (partidasExistentes) throw new Error("A chave do torneio já foi gerada");
+    if (partidasExistentes.length > 0) {
+      const existeEmAndamentoOuFinalizada = partidasExistentes.some(
+        (partida) => partida.status !== "PENDENTE",
+      );
+
+      if (existeEmAndamentoOuFinalizada) {
+        throw new Error(
+          "Não é possível gerar a nova chave com partidas em andamento ou finalizadas",
+        );
+      }
+
+      await Partida.destroy({
+        where: {
+          id_torneio,
+        },
+        transaction,
+      });
+      await torneio.update({ fase_atual: null }, { transaction });
+    }
 
     const equipesBrutas = await Equipe.findAll({
       where: { id_torneio },

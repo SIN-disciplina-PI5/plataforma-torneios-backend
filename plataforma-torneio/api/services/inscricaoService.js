@@ -1,6 +1,9 @@
 import models, { sequelize } from "../models/index.js";
 import { sairDaEquipeService } from "./equipeService.js";
-import { obterHorarioInicioReal } from "./torneioService.js";
+import {
+  obterHorarioInicioReal,
+  estaNoPeriodoDeBloqueioInscricaoOuDuplas,
+} from "./torneioService.js";
 
 const { Inscricao, Torneio, Usuario, Equipe } = models;
 
@@ -27,8 +30,15 @@ export const createInscricaoService = async (data) => {
     if (!torneio.status) throw new Error("Torneio não está ativo para inscrições");
 
     const horarioInicioReal = obterHorarioInicioReal(torneio);
-    if (new Date() >= horarioInicioReal) throw new Error("Não é possível se inscrever após o início do torneio");
-    
+    const agora = new Date();
+
+    if (agora >= horarioInicioReal) {
+      throw new Error("Não é possível se inscrever após o início do torneio");
+    }
+
+    if (estaNoPeriodoDeBloqueioInscricaoOuDuplas(torneio)) {
+      throw new Error("Não é possível se inscrever a partir de 2 dias antes do início do torneio");
+    }
 
     const inscricaoExistente = await Inscricao.findOne({
       where: { id_usuario, id_torneio },
@@ -139,7 +149,7 @@ export const getInscricaoByIdService = async (id, usuarioLogado = null) => {
     usuario: inscricao.usuario || { id: inscricao.id_usuario },
     torneio: inscricao.torneio || { id: inscricao.id_torneio },
     dupla: null,
-    data_inscricao: i.data_inscricao,
+    data_inscricao: inscricao.data_inscricao,
   };
 };
 
@@ -156,6 +166,15 @@ export const updateInscricaoService = async (id, data, usuarioLogado) => {
       lock: transaction.LOCK.UPDATE,
     });
     if (!inscricao) throw new Error("Inscrição não encontrada");
+
+    const torneio = await Torneio.findByPk(inscricao.id_torneio, {
+      transaction,
+      lock: transaction.LOCK.UPDATE,
+    });
+    if (!torneio) throw new Error("Torneio não encontrado");
+    if (estaNoPeriodoDeBloqueioInscricaoOuDuplas(torneio)) {
+      throw new Error("Não é possível alterar inscrições a partir de 2 dias antes do início do torneio");
+    }
 
     if (typeof data.status !== "boolean") {
       throw new Error("Status deve ser true (ativo) ou false (inativo)");
@@ -205,8 +224,14 @@ export const deleteInscricaoService = async (id, usuarioLogado = null) => {
   if (!torneio) throw new Error("Torneio não encontrado");
 
   const horarioInicioReal = obterHorarioInicioReal(torneio);
-  if (new Date() >= horarioInicioReal) throw new Error("Não é possível cancelar a inscrição após o início do torneio",);
-  
+  const agora = new Date();
+  if (agora >= horarioInicioReal) {
+    throw new Error("Não é possível cancelar a inscrição após o início do torneio");
+  }
+  if (estaNoPeriodoDeBloqueioInscricaoOuDuplas(torneio)) {
+    throw new Error("Não é possível cancelar a inscrição a partir de 2 dias antes do início do torneio");
+  }
+
   if (!podeAcessarInscricao(inscricao, usuarioLogado)) throw new Error("Acesso negado");
 
   const equipe = await Equipe.findOne({

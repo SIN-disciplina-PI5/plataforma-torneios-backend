@@ -1,5 +1,6 @@
 import models from "../models/index.js";
 import { notificarMembrosService } from "./notificacaoService.js";
+import { estaNoPeriodoDeBloqueioInscricaoOuDuplas } from "./torneioService.js";
 import {
   normalizarTextoObrigatorio,
   normalizarTextoOpcional,
@@ -26,6 +27,15 @@ const buscarEquipeDoUsuarioNoTorneio = async (id_torneio, id_usuario, options = 
   });
 };
 
+const assertAlteracaoDuplasPermitida = async (id_torneio) => {
+  const torneio = await Torneio.findByPk(id_torneio);
+  if (!torneio) throw new Error("Torneio não encontrado");
+
+  if (estaNoPeriodoDeBloqueioInscricaoOuDuplas(torneio)) {
+    throw new Error("Não é possível alterar as duplas a partir de 2 dias antes do início do torneio");
+  }
+};
+
 export const createEquipeService = async (id_torneio, id_usuario, nome) => {
   nome = normalizarTextoObrigatorio(nome, "Nome da equipe");
   const transaction = await models.sequelize.transaction();
@@ -36,6 +46,7 @@ export const createEquipeService = async (id_torneio, id_usuario, nome) => {
       lock: transaction.LOCK.UPDATE,
     });
     if (!torneio) throw new Error("Torneio não encontrado");
+    await assertAlteracaoDuplasPermitida(id_torneio);
 
     const inscricao = await Inscricao.findOne({
       where: { id_usuario, id_torneio, status: true },
@@ -88,6 +99,7 @@ export const entrarNaEquipeService = async (id_torneio, id_usuario, id_equipe) =
       lock: transaction.LOCK.UPDATE,
     });
     if (!torneio) throw new Error("Torneio não encontrado");
+    await assertAlteracaoDuplasPermitida(id_torneio);
 
     const inscricao = await Inscricao.findOne({
       where: { id_usuario, id_torneio, status: true },
@@ -143,6 +155,8 @@ export const entrarNaEquipeService = async (id_torneio, id_usuario, id_equipe) =
 };
 
 export const sairDaEquipeService = async (id_torneio, id_usuario) => {
+  await assertAlteracaoDuplasPermitida(id_torneio);
+
   const equipes = await Equipe.findAll({
     where: { id_torneio },
     include: [
@@ -255,6 +269,7 @@ export const getEquipeByIdService = async (id) => {
 export const updateEquipeService = async (id, data) => {
   const equipe = await Equipe.findByPk(id);
   if (!equipe) throw new Error("Equipe não encontrada");
+  await assertAlteracaoDuplasPermitida(equipe.id_torneio);
   const dadosPermitidos = {};
   if (data.nome !== undefined) {
     dadosPermitidos.nome = normalizarTextoOpcional(data.nome, "Nome da equipe");
@@ -281,6 +296,7 @@ export const updateEquipeService = async (id, data) => {
 export const deleteEquipeService = async (id) => {
   const equipe = await Equipe.findByPk(id);
   if (!equipe) throw new Error("Equipe não encontrada");
+  await assertAlteracaoDuplasPermitida(equipe.id_torneio);
   await equipe.destroy();
   return {
     message: "Equipe deletada com sucesso",
@@ -305,6 +321,7 @@ export const adminAddMembroService = async (id_equipe, id_usuario) => {
     });
 
     if (!equipe) throw new Error("Equipe não encontrada");
+    await assertAlteracaoDuplasPermitida(equipe.id_torneio);
 
     const usuario = await Usuario.findByPk(id_usuario, { transaction });
     if (!usuario) throw new Error("Usuário não encontrado");
@@ -379,6 +396,7 @@ export const adminRemoveMembroService = async (id_equipe, id_usuario) => {
   });
 
   if (!equipe) throw new Error("Equipe não encontrada");
+  await assertAlteracaoDuplasPermitida(equipe.id_torneio);
 
   const isMembro = equipe.membros.some((m) => m.id_usuario === id_usuario);
 
