@@ -1,5 +1,6 @@
 import models from "../models/index.js";
 import { sendResetPasswordEmail } from "./emailService.js";
+import { criarNotificacaoService } from "./notificacaoService.js";
 import crypto from "crypto";
 
 const { Usuario } = models;
@@ -63,6 +64,13 @@ export const resetPasswordService = async (token, novaSenha) => {
   usuario.reset_password_expires = null;
 
   await usuario.save();
+
+  await criarNotificacaoService({
+    id_usuario: usuario.id_usuario,
+    titulo: "Senha redefinida",
+    mensagem: "Senha redefinida com sucesso, prossiga para o login",
+    tipo: "INFO",
+  });
 
   return {
     message: "Senha redefinida",
