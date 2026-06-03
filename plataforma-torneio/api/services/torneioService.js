@@ -20,6 +20,27 @@ const {
 const DURACAO_PARTIDA_MINUTOS = 30;
 const UM_DIA_EM_MS = 24 * 60 * 60 * 1000;
 const DOIS_DIAS_EM_MS = 2 * UM_DIA_EM_MS;
+const ANTECEDENCIA_MINIMA_DIAS = 4;
+const QUATRO_DIAS_EM_MS = ANTECEDENCIA_MINIMA_DIAS * UM_DIA_EM_MS;
+
+const validarAntecedenciaMinima = (dataInicio) => {
+  const inicio = new Date(dataInicio);
+  if (isNaN(inicio)) throw new Error("Datas inválidas");
+
+  const hoje = new Date();
+  hoje.setHours(0, 0, 0, 0);
+
+  const inicioApenasData = new Date(inicio);
+  inicioApenasData.setHours(0, 0, 0, 0);
+
+  const menorInicioPermitido = new Date(hoje.getTime() + QUATRO_DIAS_EM_MS);
+
+  if (inicioApenasData < menorInicioPermitido) {
+    throw new Error(
+      `A data de início deve ser de pelo menos ${ANTECEDENCIA_MINIMA_DIAS} dias a partir de hoje`,
+    );
+  }
+};
 
 export const obterHorarioInicioReal = (torneio) => {
   const horario = new Date(torneio.data_inicio);
@@ -71,6 +92,8 @@ export const createTorneioService = async (dados) => {
   if (fim <= inicio) {
     throw new Error("Data de fim deve ser posterior à data de início");
   }
+
+  validarAntecedenciaMinima(inicio);
 
   const vagasValidas = [4, 8, 16, 32];
   if (!vagasValidas.includes(Number(vagas))) {
@@ -233,6 +256,10 @@ export const updateTorneioService = async (id, dados) => {
     if (isNaN(inicio) || isNaN(fim)) throw new Error("Datas inválidas");
     if (fim <= inicio) {
       throw new Error("Data de fim deve ser posterior à data de início");
+    }
+
+    if (dados.data_inicio) {
+      validarAntecedenciaMinima(inicio);
     }
 
     const diferencaMinutos = (fim - inicio) / 60000;
