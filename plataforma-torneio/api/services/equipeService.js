@@ -5,21 +5,26 @@ import {
   normalizarTextoObrigatorio,
   normalizarTextoOpcional,
 } from "../utils/validation.js";
+import { Op } from "sequelize";
 
 const { Equipe, EquipeUsuario, Inscricao, Torneio, Usuario } = models;
 
-const buscarEquipeDoUsuarioNoTorneio = async (id_torneio, id_usuario, options = {}) => {
+const buscarEquipeDoUsuarioNoTorneio = async (
+  id_torneio,
+  id_usuario,
+  options = {},
+) => {
   const includeOptions = {
     model: Usuario,
     as: "membros",
     where: { id_usuario },
     through: { attributes: [] },
   };
-  
+
   if (options.lock) {
     includeOptions.required = true;
   }
-  
+
   return Equipe.findOne({
     include: [includeOptions],
     where: { id_torneio },
@@ -32,8 +37,33 @@ const assertAlteracaoDuplasPermitida = async (id_torneio) => {
   if (!torneio) throw new Error("Torneio não encontrado");
 
   if (estaNoPeriodoDeBloqueioInscricaoOuDuplas(torneio)) {
-    throw new Error("Não é possível alterar as duplas a partir de 2 dias antes do início do torneio");
+    throw new Error(
+      "Não é possível alterar as duplas a partir de 2 dias antes do início do torneio",
+    );
   }
+};
+
+const buscarUsuarioPorIdentificador = async (identificador, transaction) => {
+  const valor = String(identificador ?? "").trim();
+
+  if (!valor) {
+    return null;
+  }
+
+  const usuarioPorId = await Usuario.findByPk(valor, { transaction });
+  if (usuarioPorId) {
+    return usuarioPorId;
+  }
+
+  return Usuario.findOne({
+    where: {
+      [Op.or]: [
+        { nome: { [Op.iLike]: valor } },
+        { email: { [Op.iLike]: valor } },
+      ],
+    },
+    transaction,
+  });
 };
 
 export const createEquipeService = async (id_torneio, id_usuario, nome) => {
@@ -55,21 +85,30 @@ export const createEquipeService = async (id_torneio, id_usuario, nome) => {
     });
     if (!inscricao) throw new Error("Usuário não está inscrito no torneio");
 
-    const equipeJaExistente = await buscarEquipeDoUsuarioNoTorneio(id_torneio, id_usuario, {
-      transaction,
-      lock: transaction.LOCK.UPDATE,
-    });
-    if (equipeJaExistente) throw new Error("Usuário já possui equipe neste torneio");
+    const equipeJaExistente = await buscarEquipeDoUsuarioNoTorneio(
+      id_torneio,
+      id_usuario,
+      {
+        transaction,
+        lock: transaction.LOCK.UPDATE,
+      },
+    );
+    if (equipeJaExistente)
+      throw new Error("Usuário já possui equipe neste torneio");
 
     const equipeExistente = await Equipe.findOne({
       where: { nome, id_torneio },
       transaction,
       lock: transaction.LOCK.UPDATE,
     });
-    if (equipeExistente) throw new Error("Já existe uma equipe com este nome neste torneio");
+    if (equipeExistente)
+      throw new Error("Já existe uma equipe com este nome neste torneio");
 
     const equipe = await Equipe.create({ nome, id_torneio }, { transaction });
-    await EquipeUsuario.create({ id_equipe: equipe.id_equipe, id_usuario }, { transaction });
+    await EquipeUsuario.create(
+      { id_equipe: equipe.id_equipe, id_usuario },
+      { transaction },
+    );
 
     await transaction.commit();
 
@@ -90,7 +129,11 @@ export const createEquipeService = async (id_torneio, id_usuario, nome) => {
   }
 };
 
-export const entrarNaEquipeService = async (id_torneio, id_usuario, id_equipe) => {
+export const entrarNaEquipeService = async (
+  id_torneio,
+  id_usuario,
+  id_equipe,
+) => {
   const transaction = await models.sequelize.transaction();
 
   try {
@@ -108,11 +151,16 @@ export const entrarNaEquipeService = async (id_torneio, id_usuario, id_equipe) =
     });
     if (!inscricao) throw new Error("Usuário não está inscrito no torneio");
 
-    const equipeJaExistente = await buscarEquipeDoUsuarioNoTorneio(id_torneio, id_usuario, {
-      transaction,
-      lock: transaction.LOCK.UPDATE,
-    });
-    if (equipeJaExistente) throw new Error("Usuário já possui uma equipe neste torneio");
+    const equipeJaExistente = await buscarEquipeDoUsuarioNoTorneio(
+      id_torneio,
+      id_usuario,
+      {
+        transaction,
+        lock: transaction.LOCK.UPDATE,
+      },
+    );
+    if (equipeJaExistente)
+      throw new Error("Usuário já possui uma equipe neste torneio");
 
     const equipeTravada = await Equipe.findByPk(id_equipe, {
       transaction,
@@ -125,7 +173,8 @@ export const entrarNaEquipeService = async (id_torneio, id_usuario, id_equipe) =
       transaction,
     });
 
-    if (equipe.id_torneio !== id_torneio) throw new Error("Equipe não pertence a este torneio");
+    if (equipe.id_torneio !== id_torneio)
+      throw new Error("Equipe não pertence a este torneio");
     if (equipe.membros.length >= 2) throw new Error("Equipe já está cheia");
 
     await EquipeUsuario.create({ id_equipe, id_usuario }, { transaction });
@@ -323,12 +372,16 @@ export const adminAddMembroService = async (id_equipe, id_usuario) => {
     if (!equipe) throw new Error("Equipe não encontrada");
     await assertAlteracaoDuplasPermitida(equipe.id_torneio);
 
-    const usuario = await Usuario.findByPk(id_usuario, { transaction });
+    const usuario = await buscarUsuarioPorIdentificador(
+      id_usuario,
+      transaction,
+    );
     if (!usuario) throw new Error("Usuário não encontrado");
+    const idUsuarioReal = usuario.id_usuario;
 
     const inscricao = await Inscricao.findOne({
       where: {
-        id_usuario,
+        id_usuario: idUsuarioReal,
         id_torneio: equipe.id_torneio,
         status: true,
       },
@@ -340,17 +393,18 @@ export const adminAddMembroService = async (id_equipe, id_usuario) => {
 
     const equipeExistente = await buscarEquipeDoUsuarioNoTorneio(
       equipe.id_torneio,
-      id_usuario,
+      idUsuarioReal,
       { transaction, lock: transaction.LOCK.UPDATE },
     );
 
-    if (equipeExistente) throw new Error("Usuário já pertence a uma equipe neste torneio");
+    if (equipeExistente)
+      throw new Error("Usuário já pertence a uma equipe neste torneio");
     if (equipe.membros.length >= 2) throw new Error("Equipe já está cheia");
 
     await EquipeUsuario.create(
       {
         id_equipe,
-        id_usuario,
+        id_usuario: idUsuarioReal,
       },
       { transaction },
     );
@@ -367,7 +421,7 @@ export const adminAddMembroService = async (id_equipe, id_usuario) => {
     );
 
     await notificarMembrosService(
-      [id_usuario],
+      [idUsuarioReal],
       "Você foi adicionado a uma equipe",
       `O administrador adicionou você à equipe ${equipe.nome}`,
       "EQUIPE",
@@ -376,7 +430,7 @@ export const adminAddMembroService = async (id_equipe, id_usuario) => {
     return {
       message: "Usuário adicionado à equipe com sucesso",
       id_equipe,
-      id_usuario,
+      id_usuario: idUsuarioReal,
     };
   } catch (error) {
     await transaction.rollback();
@@ -398,20 +452,24 @@ export const adminRemoveMembroService = async (id_equipe, id_usuario) => {
   if (!equipe) throw new Error("Equipe não encontrada");
   await assertAlteracaoDuplasPermitida(equipe.id_torneio);
 
-  const isMembro = equipe.membros.some((m) => m.id_usuario === id_usuario);
+  const usuario = await buscarUsuarioPorIdentificador(id_usuario);
+  if (!usuario) throw new Error("Usuário não encontrado");
+  const idUsuarioReal = usuario.id_usuario;
+
+  const isMembro = equipe.membros.some((m) => m.id_usuario === idUsuarioReal);
 
   if (!isMembro) throw new Error("Usuário não pertence a esta equipe");
 
   await EquipeUsuario.destroy({
     where: {
       id_equipe,
-      id_usuario,
+      id_usuario: idUsuarioReal,
     },
   });
 
   const outrosMembros = equipe.membros
     .map((m) => m.id_usuario)
-    .filter((id) => id !== id_usuario);
+    .filter((id) => id !== idUsuarioReal);
 
   await notificarMembrosService(
     outrosMembros,
@@ -421,7 +479,7 @@ export const adminRemoveMembroService = async (id_equipe, id_usuario) => {
   );
 
   await notificarMembrosService(
-    [id_usuario],
+    [idUsuarioReal],
     "Você foi removido de uma equipe",
     `O administrador removeu você da equipe ${equipe.nome}`,
     "EQUIPE",
@@ -452,6 +510,6 @@ export const adminRemoveMembroService = async (id_equipe, id_usuario) => {
   return {
     message: "Usuário removido da equipe com sucesso",
     id_equipe,
-    id_usuario,
+    id_usuario: idUsuarioReal,
   };
 };
