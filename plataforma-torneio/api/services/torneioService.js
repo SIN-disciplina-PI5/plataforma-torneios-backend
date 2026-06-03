@@ -281,10 +281,6 @@ export const deleteTorneioService = async (id) => {
   return { message: "Torneio deletado com sucesso" };
 };
 
-// notificarTorneioTresDiasAntesService foi removida — notificações 3 dias antes
-// ficam fora do escopo atual. Se precisarmos reaplicar esse comportamento,
-// é possível reintroduzir a função e conectar a um agendador/endpoint.
-
 export const gerarChaveService = async (id_torneio) => {
   const transaction = await sequelize.transaction();
 
