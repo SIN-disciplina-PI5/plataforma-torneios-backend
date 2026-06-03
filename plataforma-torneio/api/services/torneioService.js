@@ -22,6 +22,9 @@ const UM_DIA_EM_MS = 24 * 60 * 60 * 1000;
 const DOIS_DIAS_EM_MS = 2 * UM_DIA_EM_MS;
 const ANTECEDENCIA_MINIMA_DIAS = 4;
 const QUATRO_DIAS_EM_MS = ANTECEDENCIA_MINIMA_DIAS * UM_DIA_EM_MS;
+const APP_TIMEZONE_OFFSET_MINUTES = Number(
+  process.env.APP_TIMEZONE_OFFSET_MINUTES ?? -180,
+);
 
 const validarAntecedenciaMinima = (dataInicio) => {
   const inicio = new Date(dataInicio);
@@ -42,22 +45,38 @@ const validarAntecedenciaMinima = (dataInicio) => {
   }
 };
 
-export const obterHorarioInicioReal = (torneio) => {
-  const horario = new Date(torneio.data_inicio);
-
-  switch (String(torneio.turno)) {
+const obterHoraTurno = (turno) => {
+  switch (String(turno)) {
     case "MANHA":
-      horario.setHours(8, 0, 0, 0);
-      break;
+      return 8;
     case "TARDE":
-      horario.setHours(13, 0, 0, 0);
-      break;
+      return 13;
     case "NOITE":
-      horario.setHours(18, 0, 0, 0);
-      break;
+      return 18;
+    default:
+      return null;
   }
+};
 
-  return horario;
+const criarHorarioLocalNaData = (data, horaLocal) => {
+  const dataBase = new Date(data);
+  const utcEquivalente = Date.UTC(
+    dataBase.getUTCFullYear(),
+    dataBase.getUTCMonth(),
+    dataBase.getUTCDate(),
+    horaLocal,
+    0,
+    0,
+    0,
+  );
+
+  return new Date(utcEquivalente - APP_TIMEZONE_OFFSET_MINUTES * 60000);
+};
+
+export const obterHorarioInicioReal = (torneio) => {
+  const horaTurno = obterHoraTurno(torneio.turno);
+  if (horaTurno === null) return new Date(torneio.data_inicio);
+  return criarHorarioLocalNaData(torneio.data_inicio, horaTurno);
 };
 
 export const estaNoPeriodoDeBloqueioInscricaoOuDuplas = (torneio) => {
@@ -129,7 +148,7 @@ export const createTorneioService = async (dados) => {
     categoria,
     vagas,
     status: true,
-    data_inicio: inicio,
+    data_inicio: horarioInicioReal,
     data_fim: fim,
     turno: String(turno),
   });
@@ -271,7 +290,7 @@ export const updateTorneioService = async (id, dados) => {
     });
     validarJanelaDoTorneio(horarioInicioReal, fim, vagasFinais);
 
-    dados.data_inicio = inicio;
+    dados.data_inicio = horarioInicioReal;
     dados.data_fim = fim;
   }
 
