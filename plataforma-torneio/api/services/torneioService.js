@@ -71,6 +71,21 @@ const calcularTempoMinimoTorneio = (vagas) => {
   return totalPartidas * DURACAO_PARTIDA_MINUTOS;
 };
 
+const validarJanelaDoTorneio = (inicioReal, fim, vagas) => {
+  if (fim <= inicioReal) {
+    throw new Error("Data de fim deve ser posterior ao horario real de inicio do torneio");
+  }
+
+  const diferencaMinutos = (fim - inicioReal) / 60000;
+  const tempoMinimo = calcularTempoMinimoTorneio(vagas);
+
+  if (diferencaMinutos < tempoMinimo) {
+    throw new Error(
+      `O torneio precisa ter pelo menos ${tempoMinimo} minutos para ${vagas} participantes`,
+    );
+  }
+};
+
 export const createTorneioService = async (dados) => {
   const nome = normalizarTextoObrigatorio(dados.nome, "Nome do torneio");
   const categoria = normalizarTextoObrigatorio(dados.categoria, "Categoria");
@@ -100,14 +115,8 @@ export const createTorneioService = async (dados) => {
     throw new Error("As vagas devem ser 4, 8, 16 ou 32");
   }
 
-  const diferencaMinutos = (fim - inicio) / 60000;
-  const tempoMinimo = calcularTempoMinimoTorneio(vagas);
-
-  if (diferencaMinutos < tempoMinimo) {
-    throw new Error(
-      `O torneio precisa ter pelo menos ${tempoMinimo} minutos para ${vagas} participantes`,
-    );
-  }
+  const horarioInicioReal = obterHorarioInicioReal({ data_inicio: inicio, turno });
+  validarJanelaDoTorneio(horarioInicioReal, fim, vagas);
 
   const torneioExistente = await Torneio.findOne({
     where: { nome },
@@ -199,14 +208,7 @@ export const updateTorneioService = async (id, dados) => {
       throw new Error("Data de fim deve ser posterior à data de início");
     }
 
-    const diferencaMinutos = (fim - torneio.data_inicio) / 60000;
-    const tempoMinimo = calcularTempoMinimoTorneio(torneio.vagas);
-
-    if (diferencaMinutos < tempoMinimo) {
-      throw new Error(
-        `O torneio precisa ter pelo menos ${tempoMinimo} minutos para ${torneio.vagas} participantes`,
-      );
-    }
+    validarJanelaDoTorneio(horarioInicioReal, fim, torneio.vagas);
 
     await torneio.update({ data_fim: fim });
 
@@ -247,11 +249,12 @@ export const updateTorneioService = async (id, dados) => {
 
   const vagasFinais = dados.vagas ?? torneio.vagas;
 
-  if (dados.data_inicio || dados.data_fim || dados.vagas) {
+  if (dados.data_inicio || dados.data_fim || dados.vagas || dados.turno) {
     const inicio = dados.data_inicio
       ? new Date(dados.data_inicio)
       : torneio.data_inicio;
     const fim = dados.data_fim ? new Date(dados.data_fim) : torneio.data_fim;
+    const turnoFinal = dados.turno ?? torneio.turno;
 
     if (isNaN(inicio) || isNaN(fim)) throw new Error("Datas inválidas");
     if (fim <= inicio) {
@@ -262,14 +265,11 @@ export const updateTorneioService = async (id, dados) => {
       validarAntecedenciaMinima(inicio);
     }
 
-    const diferencaMinutos = (fim - inicio) / 60000;
-    const tempoMinimo = calcularTempoMinimoTorneio(vagasFinais);
-
-    if (diferencaMinutos < tempoMinimo) {
-      throw new Error(
-        `O torneio precisa ter pelo menos ${tempoMinimo} minutos para ${vagasFinais} participantes`,
-      );
-    }
+    const horarioInicioReal = obterHorarioInicioReal({
+      data_inicio: inicio,
+      turno: turnoFinal,
+    });
+    validarJanelaDoTorneio(horarioInicioReal, fim, vagasFinais);
 
     dados.data_inicio = inicio;
     dados.data_fim = fim;
@@ -413,23 +413,7 @@ export const gerarChaveService = async (id_torneio) => {
     const embaralhadas = equipes.sort(() => Math.random() - 0.5);
     const idsPartidasCriadas = [];
 
-    let horarioAtual = new Date(torneio.data_inicio);
-
-    if (torneio.turno) {
-      switch (String(torneio.turno)) {
-        case "MANHA":
-          horarioAtual.setHours(8, 0, 0, 0);
-          break;
-        case "TARDE":
-          horarioAtual.setHours(13, 0, 0, 0);
-          break;
-        case "NOITE":
-          horarioAtual.setHours(18, 0, 0, 0);
-          break;
-        default:
-          break;
-      }
-    }
+    let horarioAtual = obterHorarioInicioReal(torneio);
 
     const totalPartidas = embaralhadas.length / 2;
 

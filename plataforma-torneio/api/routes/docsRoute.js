@@ -165,17 +165,14 @@ const openApiDocument = {
       get: { ...route("Vínculos", "Busca vínculo equipe-usuário. Requer admin."), parameters: [id("id")] },
       delete: { ...route("Vínculos", "Remove vínculo equipe-usuário. Requer admin.", bearer, null, { 204: noContent, 400: error }), parameters: [id("id")] },
     },
-    "/api/partida-usuarios": {
+    "/api/partida-equipes": {
       get: route("Vínculos", "Lista vínculos partida-equipe"),
       post: route("Vínculos", "Cria vínculo partida-equipe. Requer admin.", bearer, body, { 201: created, 400: error }),
     },
-    "/api/partida-usuarios/{id_partida_usuario}": {
-      get: { ...route("Vínculos", "Busca vínculo partida-equipe"), parameters: [id("id_partida_usuario")] },
-      patch: { ...route("Vínculos", "Atualiza vínculo partida-equipe. Requer admin.", bearer, body), parameters: [id("id_partida_usuario")] },
-      delete: { ...route("Vínculos", "Remove vínculo partida-equipe. Requer admin.", bearer, null, { 204: noContent, 400: error }), parameters: [id("id_partida_usuario")] },
-    },
-    "/api/partida-usuarios/status/{id_partida_usuario}": {
-      patch: { ...route("Vínculos", "Define status individual. Requer admin.", bearer, body), parameters: [id("id_partida_usuario")] },
+    "/api/partida-equipes/{id_partida_equipe}": {
+      get: { ...route("Vínculos", "Busca vínculo partida-equipe"), parameters: [id("id_partida_equipe")] },
+      patch: { ...route("Vínculos", "Atualiza vínculo partida-equipe. Requer admin.", bearer, body), parameters: [id("id_partida_equipe")] },
+      delete: { ...route("Vínculos", "Remove vínculo partida-equipe. Requer admin.", bearer, null, { 204: noContent, 400: error }), parameters: [id("id_partida_equipe")] },
     },
     "/api/password/forgot-password": {
       post: route("Senha", "Solicita código de redefinição de senha", null, body),

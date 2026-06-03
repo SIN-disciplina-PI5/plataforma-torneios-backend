@@ -23,8 +23,10 @@ const validarSenhaForte = (senha) => {
 export const forgotPasswordService = async (email) => {
   if (!email) throw new Error("Email é obrigatório");
 
+  const emailNormalizado = String(email).trim().toLowerCase();
+
   const usuario = await Usuario.findOne({
-    where: { email },
+    where: { email: emailNormalizado },
   });
 
   if (!usuario) { return { message: RESET_PASSWORD_SUCCESS_MESSAGE, }; }
@@ -36,7 +38,7 @@ export const forgotPasswordService = async (email) => {
 
   await usuario.save();
 
-  await sendResetPasswordEmail(email, resetToken);
+  await sendResetPasswordEmail(emailNormalizado, resetToken);
 
   return {
     message: RESET_PASSWORD_SUCCESS_MESSAGE,

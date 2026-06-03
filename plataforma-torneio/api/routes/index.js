@@ -22,7 +22,6 @@ router.use("/equipe-usuarios", equipeUsuarioRoute);
 router.use("/ranking", rankingRoute);
 router.use("/partidas", partidaRoute);
 router.use("/partida-equipes", partidaEquipeRoute);
-router.use("/partida-usuarios", partidaEquipeRoute);
 router.use("/password", resetPasswordRoute);
 router.use("/notifications", notificacaoRoutes);
 
