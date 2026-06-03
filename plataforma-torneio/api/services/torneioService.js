@@ -92,7 +92,9 @@ const calcularTempoMinimoTorneio = (vagas) => {
 
 const validarJanelaDoTorneio = (inicioReal, fim, vagas) => {
   if (fim <= inicioReal) {
-    throw new Error("Data de fim deve ser posterior ao horario real de inicio do torneio");
+    throw new Error(
+      "Data de fim deve ser posterior ao horario real de inicio do torneio",
+    );
   }
 
   const diferencaMinutos = (fim - inicioReal) / 60000;
@@ -134,7 +136,10 @@ export const createTorneioService = async (dados) => {
     throw new Error("As vagas devem ser 4, 8, 16 ou 32");
   }
 
-  const horarioInicioReal = obterHorarioInicioReal({ data_inicio: inicio, turno });
+  const horarioInicioReal = obterHorarioInicioReal({
+    data_inicio: inicio,
+    turno,
+  });
   validarJanelaDoTorneio(horarioInicioReal, fim, vagas);
 
   const torneioExistente = await Torneio.findOne({
@@ -211,14 +216,20 @@ export const updateTorneioService = async (id, dados) => {
 
   if (torneioIniciado) {
     const camposPermitidos = Object.keys(dados);
-    const camposInvalidos = camposPermitidos.filter((campo) => campo !== "data_fim");
+    const camposInvalidos = camposPermitidos.filter(
+      (campo) => campo !== "data_fim",
+    );
 
     if (camposInvalidos.length > 0) {
-      throw new Error("Após o início do torneio só é permitido alterar a data de fim");
+      throw new Error(
+        "Após o início do torneio só é permitido alterar a data de fim",
+      );
     }
 
     if (dados.data_fim === undefined) {
-      throw new Error("Após o início do torneio só é permitido alterar a data de fim");
+      throw new Error(
+        "Após o início do torneio só é permitido alterar a data de fim",
+      );
     }
 
     const fim = new Date(dados.data_fim);
@@ -341,6 +352,22 @@ export const gerarChaveService = async (id_torneio) => {
       throw new Error("Não é possível gerar a chave após o início do torneio");
     }
 
+    const horarioInicioReal = obterHorarioInicioReal(torneio);
+    const agora = new Date();
+
+    if (agora >= horarioInicioReal) {
+      throw new Error("Não é possível gerar a chave após o início do torneio");
+    }
+
+    const inicioJanelaGeracao = new Date(
+      horarioInicioReal.getTime() - DOIS_DIAS_EM_MS,
+    );
+
+    if (agora < inicioJanelaGeracao) {
+      throw new Error(
+        "A chave só pode ser gerada nos 2 dias anteriores ao início do torneio",
+      );
+    }
     const partidasExistentes = await Partida.findAll({
       where: { id_torneio },
       transaction,
