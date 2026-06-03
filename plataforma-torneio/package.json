@@ -32,9 +32,6 @@
     "uuidv4": "^6.2.13"
   },
   "devDependencies": {
-    "babel-jest": "^30.2.0",
-    "baseline-browser-mapping": "^2.8.31",
-    "jest": "^30.2.0",
-    "supertest": "^7.1.4"
+    "baseline-browser-mapping": "^2.8.31"
   }
 }
