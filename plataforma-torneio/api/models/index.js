@@ -13,18 +13,23 @@ import RankingModel from "./ranking.js";
 import PartidaEquipeModel from "./partidaEquipe.js";
 import NotificacaoModel from "./notificacao.js";
 
+const dialectOptions = {};
+
+const shouldEnableSsl =
+  process.env.POSTGRES_SSL === "true" ||
+  process.env.POSTGRES_URL?.includes("sslmode=require");
+
+if (shouldEnableSsl) {
+  dialectOptions.ssl = {
+    require: true,
+    rejectUnauthorized: false,
+  };
+}
+
 const sequelize = new Sequelize(process.env.POSTGRES_URL, {
   dialect: "postgres",
   protocol: "postgres",
-  dialectOptions:
-    process.env.NODE_ENV === "test"
-      ? {}
-      : {
-          ssl: {
-            require: true,
-            rejectUnauthorized: false,
-          },
-        },
+  dialectOptions,
   dialectModule: pg,
   logging: false,
 });

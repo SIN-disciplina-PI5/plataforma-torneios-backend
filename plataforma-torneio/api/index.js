@@ -6,9 +6,7 @@ import routes from "./routes/index.js";
 
 const app = express();
 
-if (process.env.NODE_ENV !== "test") {
-  app.set("trust proxy", true);
-}
+app.set("trust proxy", true);
 
 //const allowedOrigins = process.env.CORS_ORIGINS?.split(",") || [];
 
@@ -24,17 +22,15 @@ app.get("/", (req, res) => {
 
 app.use("/api", routes);
 
-if (process.env.NODE_ENV !== "test") {
-  models.sequelize
-    .sync()
-    .then(() => console.log("Banco sincronizado"))
-    .catch(console.error);
+models.sequelize
+  .sync()
+  .then(() => console.log("Banco sincronizado"))
+  .catch(console.error);
 
-  const port = process.env.PORT || 4000;
+const port = process.env.PORT || 4000;
 
-  app.listen(port, () => {
-    console.log(`Servidor rodando na porta ${port}`);
-  });
-}
+app.listen(port, () => {
+  console.log(`Servidor rodando na porta ${port}`);
+});
 
 export default app;
