@@ -345,12 +345,6 @@ export const gerarChaveService = async (id_torneio) => {
     const torneio = await Torneio.findByPk(id_torneio, { transaction });
 
     if (!torneio) throw new Error("Torneio não encontrado");
-    const horarioInicioReal = obterHorarioInicioReal(torneio);
-    const agora = new Date();
-
-    if (agora >= horarioInicioReal) {
-      throw new Error("Não é possível gerar a chave após o início do torneio");
-    }
 
     const horarioInicioReal = obterHorarioInicioReal(torneio);
     const agora = new Date();
@@ -368,6 +362,7 @@ export const gerarChaveService = async (id_torneio) => {
         "A chave só pode ser gerada nos 2 dias anteriores ao início do torneio",
       );
     }
+
     const partidasExistentes = await Partida.findAll({
       where: { id_torneio },
       transaction,
@@ -390,6 +385,7 @@ export const gerarChaveService = async (id_torneio) => {
         },
         transaction,
       });
+
       await torneio.update({ fase_atual: null }, { transaction });
     }
 
@@ -475,6 +471,7 @@ export const gerarChaveService = async (id_torneio) => {
     }
 
     let faseInicial = null;
+
     if (equipes.length === 2) faseInicial = "FINAL";
     if (equipes.length === 4) faseInicial = "SEMI_FINAL";
     if (equipes.length === 8) faseInicial = "QUARTAS_DE_FINAL";
