@@ -225,9 +225,14 @@ export const createPartidaService = async (dados) => {
 
 export const getPartidaByIdService = async (id) => {
   const partida = await Partida.findOne({
-    where: { id_partida: id },
+    where: {
+      id_partida: id,
+    },
     include: [
-      { model: Torneio, attributes: ["nome", "categoria"] },
+      {
+        model: Torneio,
+        attributes: ["nome", "categoria"],
+      },
       {
         model: PartidaEquipe,
         as: "equipesPartida",
@@ -248,10 +253,15 @@ export const getPartidaByIdService = async (id) => {
         ],
       },
     ],
-  });
+    order: [[{ model: PartidaEquipe, as: "equipesPartida" }, "id_partida_equipe", "ASC"]],
+  }); 
 
   if (!partida) throw new Error("Partida não encontrada");
 
+  const equipesOrdenadas = partida.equipesPartida
+    .slice()
+    .sort((a, b) => String(a.id_partida_equipe).localeCompare(String(b.id_partida_equipe)));
+  
   return {
     id_partida: partida.id_partida,
     id_torneio: partida.id_torneio,
@@ -296,22 +306,31 @@ export const getAllPartidasService = async (filtros = {}) => {
         ],
       },
     ],
-    order: [["horario", "ASC"]],
+    order: [
+      ["horario", "ASC"],
+      [{ model: PartidaEquipe, as: "equipesPartida" }, "id_partida_equipe", "ASC"],
+    ],
   });
 
-  return partidas.map((p) => ({
-    id_partida: p.id_partida,
-    torneio: p.Torneio ? p.Torneio.nome : null,
-    fase: p.fase,
-    status: p.status,
-    horario: p.horario,
-    placar: p.placar,
-    equipes: p.equipesPartida.map((ep) => ({
-      id_equipe: ep.equipe.id_equipe,
-      nome: ep.equipe.nome,
-      membros: ep.equipe.membros,
-    })),
-  }));
+  return partidas.map((p) => {
+    const equipesOrdenadas = p.equipesPartida
+      .slice()
+      .sort((a, b) => String(a.id_partida_equipe).localeCompare(String(b.id_partida_equipe)));
+
+    return {
+      id_partida: p.id_partida,
+      torneio: p.Torneio ? p.Torneio.nome : null,
+      fase: p.fase,
+      status: p.status,
+      horario: p.horario,
+      placar: p.placar,
+      equipes: equipesOrdenadas.map((ep) => ({
+        id_equipe: ep.equipe.id_equipe,
+        nome: ep.equipe.nome,
+        membros: ep.equipe.membros,
+      })),
+    };
+  });
 };
 
 export const updatePartidaService = async (id, dados) => {
