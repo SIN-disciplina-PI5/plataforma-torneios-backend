@@ -8,10 +8,22 @@ const app = express();
 
 app.set("trust proxy", true);
 
-//const allowedOrigins = process.env.CORS_ORIGINS?.split(",") || [];
+const allowedOrigins = [
+  "https://arena-lagoa-beach-git-developer-kaiki-barros-projects.vercel.app",
+  "https://gabssiin-lagoa-ai-2.hf.space/api/chat",
+];
 
-//app.use(cors({ origin: allowedOrigins,}),);
-app.use(cors());
+app.use(
+  cors({
+    origin(origin, callback) {
+      if (!origin || allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+
+      return callback(new Error("Origem nao permitida pelo CORS"));
+    },
+  }),
+);
 
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
