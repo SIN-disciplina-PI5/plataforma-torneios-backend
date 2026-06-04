@@ -522,6 +522,31 @@ export const gerarChaveService = async (id_torneio) => {
     });
 
     await transaction.commit();
+
+    const totalParticipantes = equipes.length;
+    const admins = await Usuario.findAll({
+      where: { role: "ADMIN" },
+      attributes: ["id_usuario"],
+    });
+
+    const idsAdmins = admins.map((admin) => admin.id_usuario);
+
+    if (idsAdmins.length > 0) {
+      await notificarMembrosService(
+        idsAdmins,
+        "Inscrições Encerradas",
+        `Inscrições encerradas. ${totalParticipantes} participantes confirmados.`,
+        "ADMIN",
+      );
+
+      await notificarMembrosService(
+        idsAdmins,
+        "Chave do Torneio Gerada",
+        "Inscrições encerradas. Você já pode gerar o chavemento!",
+        "ADMIN",
+      );
+    }
+
     return partidasComEquipes;
   } catch (error) {
     await transaction.rollback();

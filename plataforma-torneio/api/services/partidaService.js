@@ -1,5 +1,6 @@
 import models from "../models/index.js";
 import { atualizarPontuacaoService } from "./rankingService.js";
+import { notificarMembrosService, criarNotificacaoService } from "./notificacaoService.js";
 import { obterHorarioInicioReal } from "./torneioService.js";
 
 const { Partida, Torneio, Equipe, Usuario, PartidaEquipe } = models;
@@ -470,10 +471,71 @@ export const finalizarPartidaService = async (id, dados) => {
     if (tipoEvento) {
       for (const membro of equipeVencedora.membros) {
         await atualizarPontuacaoService(membro.id_usuario, tipoEvento, { transaction });
+
+        if (tipoEvento === "AVANCO_FASE") {
+          await criarNotificacaoService({
+            id_usuario: membro.id_usuario,
+            titulo: "Vitória em Partida",
+            mensagem:
+              "Você venceu uma partida e ganhou 10 pontos no ranking!\n\nConfira sua posição atual e continue avançando.",
+            tipo: "TORNEIO",
+          });
+        } else if (tipoEvento === "FINALISTA") {
+          await criarNotificacaoService({
+            id_usuario: membro.id_usuario,
+            titulo: "Classificação para a Final",
+            mensagem:
+              "Parabéns! Você é finalista.\n\nVocê recebeu 20 pontos no ranking.\n\nVeja sua nova colocação e prepare-se para a decisão.",
+            tipo: "TORNEIO",
+          });
+        } else if (tipoEvento === "CAMPEAO") {
+          await criarNotificacaoService({
+            id_usuario: membro.id_usuario,
+            titulo: "Parabéns, Campeão!",
+            mensagem:
+              "Parabéns! Você conquistou o título de campeão.\n\nVocê recebeu 50 pontos no ranking.\n\nConfira sua posição atual e continue acumulando conquistas.",
+            tipo: "TORNEIO",
+          });
+        }
       }
     }
 
     await transaction.commit();
+
+    if (partida.fase === "FINAL") {
+      const partidasPendentes = await Partida.count({
+        where: {
+          id_torneio: partida.id_torneio,
+          fase: "FINAL",
+          status: { [models.Sequelize.Op.ne]: "FINALIZADA" },
+        },
+      });
+
+      if (partidasPendentes === 0) {
+        const totalPartidas = await Partida.count({
+          where: { id_torneio: partida.id_torneio, status: "FINALIZADA" },
+        });
+
+        const torneio = await Torneio.findByPk(partida.id_torneio);
+        const totalParticipantes = torneio ? torneio.vagas : 0;
+
+        const admins = await Usuario.findAll({
+          where: { role: "ADMIN" },
+          attributes: ["id_usuario"],
+        });
+
+        const idsAdmins = admins.map((admin) => admin.id_usuario);
+
+        if (idsAdmins.length > 0) {
+          await notificarMembrosService(
+            idsAdmins,
+            "Torneio Concluído",
+            `Torneio concluído. ${totalPartidas} partidas disputadas e ${totalParticipantes} participantes.`,
+            "ADMIN",
+          );
+        }
+      }
+    }
 
     return {
       id_partida: partida.id_partida,
