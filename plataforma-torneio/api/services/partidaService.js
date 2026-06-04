@@ -1,4 +1,5 @@
 import models from "../models/index.js";
+import { Op } from "sequelize";
 import { atualizarPontuacaoService } from "./rankingService.js";
 import { notificarMembrosService, criarNotificacaoService } from "./notificacaoService.js";
 import { obterHorarioInicioReal } from "./torneioService.js";
