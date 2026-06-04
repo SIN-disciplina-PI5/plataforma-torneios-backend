@@ -434,9 +434,14 @@ export const finalizarPartidaService = async (id, dados) => {
   if (!vencedor_id) throw new Error("Vencedor obrigatório");
 
   const transaction = await models.sequelize.transaction();
+  let partidaFinalizada = null;
+  let tipoEvento = null;
+  let equipeVencedora = null;
+  let partida = null;
+  let verificarConclusao = false;
 
   try {
-    const partida = await Partida.findByPk(id, {
+    partida = await Partida.findByPk(id, {
       transaction,
       lock: transaction.LOCK.UPDATE, // Aqui funciona perfeitamente porque é uma tabela única
     });
@@ -471,7 +476,7 @@ export const finalizarPartidaService = async (id, dados) => {
       { transaction },
     );
 
-    const equipeVencedora = await Equipe.findByPk(vencedor_id, {
+    equipeVencedora = await Equipe.findByPk(vencedor_id, {
       include: [{ model: Usuario, as: "membros", attributes: ["id_usuario"] }],
       transaction, 
     });
@@ -481,7 +486,6 @@ export const finalizarPartidaService = async (id, dados) => {
       throw new Error("Equipe vencedora não pertence ao torneio da partida");
     }
 
-    let tipoEvento = null;
     if (partida.fase === "OITAVAS_DE_FINAL") tipoEvento = "AVANCO_FASE";
     if (partida.fase === "QUARTAS_DE_FINAL") tipoEvento = "AVANCO_FASE";
     if (partida.fase === "SEMI_FINAL") tipoEvento = "FINALISTA";
@@ -490,7 +494,32 @@ export const finalizarPartidaService = async (id, dados) => {
     if (tipoEvento) {
       for (const membro of equipeVencedora.membros) {
         await atualizarPontuacaoService(membro.id_usuario, tipoEvento, { transaction });
+      }
+    }
 
+    if (partida.fase === "FINAL") {
+      const partidasPendentes = await Partida.count({
+        where: {
+          id_torneio: partida.id_torneio,
+          fase: "FINAL",
+          status: { [models.Sequelize.Op.ne]: "FINALIZADA" },
+        },
+        transaction,
+      });
+
+      verificarConclusao = partidasPendentes === 0;
+    }
+
+    await transaction.commit();
+    partidaFinalizada = true;
+  } catch (error) {
+    await transaction.rollback();
+    throw error;
+  }
+
+  if (partidaFinalizada && tipoEvento && equipeVencedora) {
+    try {
+      for (const membro of equipeVencedora.membros) {
         if (tipoEvento === "AVANCO_FASE") {
           await criarNotificacaoService({
             id_usuario: membro.id_usuario,
@@ -517,53 +546,44 @@ export const finalizarPartidaService = async (id, dados) => {
           });
         }
       }
+    } catch (error) {
+      console.error("Erro ao criar notificações de membros:", error);
     }
+  }
 
-    await transaction.commit();
-
-    if (partida.fase === "FINAL") {
-      const partidasPendentes = await Partida.count({
-        where: {
-          id_torneio: partida.id_torneio,
-          fase: "FINAL",
-          status: { [models.Sequelize.Op.ne]: "FINALIZADA" },
-        },
+  if (verificarConclusao) {
+    try {
+      const totalPartidas = await Partida.count({
+        where: { id_torneio: partida.id_torneio, status: "FINALIZADA" },
       });
 
-      if (partidasPendentes === 0) {
-        const totalPartidas = await Partida.count({
-          where: { id_torneio: partida.id_torneio, status: "FINALIZADA" },
-        });
+      const torneio = await Torneio.findByPk(partida.id_torneio);
+      const totalParticipantes = torneio ? torneio.vagas : 0;
 
-        const torneio = await Torneio.findByPk(partida.id_torneio);
-        const totalParticipantes = torneio ? torneio.vagas : 0;
+      const admins = await Usuario.findAll({
+        where: { role: "ADMIN" },
+        attributes: ["id_usuario"],
+      });
 
-        const admins = await Usuario.findAll({
-          where: { role: "ADMIN" },
-          attributes: ["id_usuario"],
-        });
+      const idsAdmins = admins.map((admin) => admin.id_usuario);
 
-        const idsAdmins = admins.map((admin) => admin.id_usuario);
-
-        if (idsAdmins.length > 0) {
-          await notificarMembrosService(
-            idsAdmins,
-            "Torneio Concluído",
-            `Torneio concluído. ${totalPartidas} partidas disputadas e ${totalParticipantes} participantes.`,
-            "ADMIN",
-          );
-        }
+      if (idsAdmins.length > 0) {
+        await notificarMembrosService(
+          idsAdmins,
+          "Torneio Concluído",
+          `Torneio concluído. ${totalPartidas} partidas disputadas e ${totalParticipantes} participantes.`,
+          "ADMIN",
+        );
       }
+    } catch (error) {
+      console.error("Erro ao notificar conclusão do torneio:", error);
     }
-
-    return {
-      id_partida: partida.id_partida,
-      status: partida.status,
-      placar: partida.placar,
-      vencedor_id: partida.vencedor_id,
-    };
-  } catch (error) {
-    await transaction.rollback();
-    throw error;
   }
+
+  return {
+    id_partida: partida.id_partida,
+    status: partida.status,
+    placar: partida.placar,
+    vencedor_id: partida.vencedor_id,
+  };
 };

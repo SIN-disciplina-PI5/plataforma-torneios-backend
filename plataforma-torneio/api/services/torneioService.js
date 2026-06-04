@@ -340,6 +340,8 @@ export const deleteTorneioService = async (id) => {
 
 export const gerarChaveService = async (id_torneio) => {
   const transaction = await sequelize.transaction();
+  let resultado = null;
+  let totalEquipes = 0;
 
   try {
     const torneio = await Torneio.findByPk(id_torneio, { transaction });
@@ -521,9 +523,24 @@ export const gerarChaveService = async (id_torneio) => {
       transaction,
     });
 
-    await transaction.commit();
+    totalEquipes = equipes.length;
+    resultado = partidasComEquipes;
 
-    const totalParticipantes = equipes.length;
+    await transaction.commit();
+  } catch (error) {
+    await transaction.rollback();
+    throw error;
+  }
+
+  if (resultado) {
+    await notificarAdminsGeracaoChave(totalEquipes);
+  }
+
+  return resultado;
+};
+
+const notificarAdminsGeracaoChave = async (totalParticipantes) => {
+  try {
     const admins = await Usuario.findAll({
       where: { role: "ADMIN" },
       attributes: ["id_usuario"],
@@ -541,16 +558,13 @@ export const gerarChaveService = async (id_torneio) => {
 
       await notificarMembrosService(
         idsAdmins,
-        "Chave do Torneio Gerada",
+        "⁠Chave do Torneio Gerada",
         "Inscrições encerradas. Você já pode gerar o chavemento!",
         "ADMIN",
       );
     }
-
-    return partidasComEquipes;
   } catch (error) {
-    await transaction.rollback();
-    throw error;
+    console.error("Erro ao notificar admins sobre geração de chave:", error);
   }
 };
 
