@@ -11,6 +11,7 @@ app.set("trust proxy", true);
 const allowedOrigins = [
   "https://arena-lagoa-beach-git-developer-kaiki-barros-projects.vercel.app",
   "https://gabssiin-lagoa-ai-2.hf.space/api/chat",
+  "https://arena-lagoa.vercel.app",
 ];
 
 app.use(
